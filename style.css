@@ -1,0 +1,740 @@
+:root {
+  --blue: #2f6feb;
+  --blue-light: #eaf1ff;
+  --text: #1a1a1a;
+  --text-sub: #8a8a8a;
+  --border: #ececec;
+  --bg: #ffffff;
+  --bg-soft: #fafafa;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* 상단바 */
+.topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  height: 64px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.topbar h1 {
+  font-size: 19px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.topbar .badge {
+  margin-left: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  background: var(--blue-light);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* GNB (최상단 내비게이션) */
+.gnb {
+  flex: none;
+  display: flex;
+  gap: 4px;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.gnb-btn {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 16px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-sub);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+}
+
+.gnb-btn:hover { color: var(--text); }
+
+.gnb-btn.active {
+  color: var(--blue);
+  border-bottom-color: var(--blue);
+}
+
+.gnb-panel { display: none; }
+.gnb-panel.active { display: block; }
+
+/* 탭 메뉴 (채용 내부: 직업/써치/지역별) */
+.tabbar {
+  flex: none;
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  margin: -28px -28px 20px;
+  padding: 0 28px;
+}
+
+.tab-btn {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 14px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-sub);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+}
+
+.tab-btn:hover { color: var(--text); }
+
+.tab-btn.active {
+  color: var(--blue);
+  border-bottom-color: var(--blue);
+}
+
+/* 콘텐츠 영역 */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px;
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.section-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0 0 14px;
+}
+
+.section-sub {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin: -10px 0 18px;
+}
+
+/* 직무/구 필터 필(pill) */
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.pill {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.pill:hover { border-color: var(--blue); color: var(--text); }
+
+.pill.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+/* 리스트 상단 툴바 (좌: 건수 / 우: 정렬) */
+.list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.sort-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-select label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+}
+
+.sort-select select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* 검색창 */
+.search-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  background: var(--bg-soft);
+  color: var(--text);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  background: var(--bg);
+}
+
+/* 전역 검색: 상단바 우측 돋보기 버튼 */
+.global-search-btn {
+  appearance: none;
+  border: none;
+  background: none;
+  margin-left: auto;
+  font-size: 19px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background .15s;
+}
+
+.global-search-btn:hover { background: var(--bg-soft); }
+
+/* 전역 검색 드로어 (화면 오른쪽에서 슬라이드 인) */
+.search-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.32);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease-out;
+  z-index: 99;
+}
+
+.search-drawer-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.search-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(420px, 100%);
+  height: 100%;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  box-shadow: -12px 0 32px rgba(0,0,0,.12);
+  padding: 24px;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform .28s ease-out;
+  z-index: 100;
+}
+
+.search-drawer.open {
+  transform: translateX(0);
+}
+
+.search-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.search-drawer-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.search-drawer-close {
+  appearance: none;
+  border: none;
+  background: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text-sub);
+  padding: 4px 8px;
+}
+
+.search-drawer-close:hover { color: var(--text); }
+
+.search-drawer-cards {
+  grid-template-columns: 1fr;
+}
+
+/* 직업 탭: 직무별로 이어지는 섹션 뷰 */
+.job-section {
+  margin-bottom: 30px;
+}
+
+.job-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.job-section-title {
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+.job-section-title .cnt {
+  font-weight: 700;
+  color: var(--blue);
+  margin-left: 4px;
+}
+
+.job-section-row {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+
+.job-section-row .job-card {
+  flex: none;
+  width: 270px;
+}
+
+/* 카드 그리드 */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 16px;
+}
+
+.job-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--bg);
+  cursor: pointer;
+  z-index: 1;
+  transition: box-shadow .25s ease-out, transform .25s ease-out;
+}
+
+.job-card:hover,
+.job-card:focus-visible {
+  transform: scale(1.03);
+  box-shadow: 0 12px 32px rgba(0,0,0,.22);
+  z-index: 10;
+  outline: none;
+}
+
+/* Hover 시 페이드인되는 블러 상세조건 레이어 */
+.job-card-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 11px;
+  padding: 22px;
+  background: rgba(18, 20, 28, .58);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease-out;
+}
+
+.job-card:hover .job-card-overlay,
+.job-card:focus-visible .job-card-overlay {
+  opacity: 1;
+}
+
+.overlay-detail {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255,255,255,.18);
+  padding-bottom: 6px;
+}
+
+.overlay-detail .label {
+  color: rgba(255,255,255,.72);
+  font-weight: 600;
+  flex: none;
+}
+
+.overlay-detail .value {
+  color: #fff;
+  font-weight: 800;
+  text-align: right;
+}
+
+.job-card .logo {
+  font-size: 26px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-soft);
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.job-card .name {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  line-height: 1.35;
+}
+
+.job-card .company {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin: 0 0 8px;
+}
+
+.job-card .intro {
+  font-size: 12.5px;
+  color: var(--text);
+  opacity: .75;
+  line-height: 1.5;
+  margin: 0 0 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.job-card .address {
+  font-size: 12px;
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.job-card .meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.job-card .meta-row .salary {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--blue);
+}
+
+.job-card .meta-row .applicants {
+  font-size: 11.5px;
+  color: var(--text-sub);
+}
+
+.job-card .tags {
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--blue);
+  background: var(--blue-light);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+/* 지역 요약 (필요 시 사용) */
+.region-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.region-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+}
+
+.region-pill .cnt {
+  font-weight: 800;
+  color: var(--blue);
+}
+
+/* 맞춤 탐색 필터 */
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--bg-soft);
+  border-radius: 14px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-group label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-sub);
+}
+
+.filter-group select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+  min-width: 130px;
+}
+
+.result-count {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.result-count b { color: var(--blue); }
+
+.empty-state {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--text-sub);
+  font-size: 14px;
+}
+
+/* 지도 */
+#map {
+  width: 100%;
+  height: 480px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+.region-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.region-legend span.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--blue);
+  opacity: .55;
+  margin-right: 4px;
+}
+
+/* 이력서 요약 */
+.resume-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-soft);
+  margin-bottom: 24px;
+}
+
+.resume-summary-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.resume-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--blue-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex: none;
+}
+
+.resume-name {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.resume-headline {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin: 2px 0 0;
+}
+
+.resume-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex: none;
+}
+
+.resume-progress-bar {
+  width: 160px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.resume-progress-fill {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 999px;
+}
+
+.resume-progress-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--blue);
+}
+
+/* 지원 현황 상태 태그 */
+.status-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.status-pending { background: #fff4e0; color: #c9791b; }
+.status-pass { background: #e6f7ee; color: #1c8a4d; }
+.status-interview { background: var(--blue-light); color: var(--blue); }
+.status-fail { background: #fdecec; color: #c0392b; }
+
+/* 고용 이벤트 카드 */
+.event-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.dday-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: #e0572c;
+  background: #fdece4;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+/* 커뮤니티 리스트 */
+.community-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+
+.community-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 6px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.community-row:hover { background: var(--bg-soft); }
+
+.community-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.community-category {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--blue);
+}
+
+.community-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.community-sub {
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.community-stats {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--text-sub);
+  flex: none;
+}

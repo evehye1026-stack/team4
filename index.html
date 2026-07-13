@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>개발자 채용 대시보드</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 상단바 (고정) -->
+  <header class="topbar">
+    <h1>개발자 채용 대시보드</h1>
+    <span class="badge">개발 직군 전용</span>
+    <button class="global-search-btn" id="global-search-btn" aria-label="검색 열기" aria-expanded="false" aria-controls="search-drawer">🔍</button>
+  </header>
+
+  <!-- 전역 검색 드로어 (화면 오른쪽에서 슬라이드 인) -->
+  <div class="search-drawer-backdrop" id="search-drawer-backdrop"></div>
+  <aside class="search-drawer" id="search-drawer" aria-hidden="true">
+    <div class="search-drawer-head">
+      <h3>공고 검색</h3>
+      <button class="search-drawer-close" id="search-drawer-close" aria-label="검색 닫기">✕</button>
+    </div>
+    <input type="text" id="search-input" class="search-input" placeholder="포지션, 회사, 기술스택으로 검색">
+
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>경력</label>
+        <select id="f-years"></select>
+      </div>
+      <div class="filter-group">
+        <label>지역</label>
+        <select id="f-city"></select>
+      </div>
+    </div>
+
+    <div class="list-toolbar">
+      <span class="result-count" id="search-count"></span>
+      <div class="sort-select">
+        <label>정렬</label>
+        <select id="search-sort"></select>
+      </div>
+    </div>
+
+    <div id="search-cards" class="card-grid search-drawer-cards"></div>
+  </aside>
+
+  <!-- GNB (최상단 내비게이션) -->
+  <nav class="gnb">
+    <button class="gnb-btn active" data-gnb="job">채용</button>
+    <button class="gnb-btn" data-gnb="resume">이력서</button>
+    <button class="gnb-btn" data-gnb="event">고용 이벤트</button>
+    <button class="gnb-btn" data-gnb="community">커뮤니티</button>
+  </nav>
+
+  <!-- 콘텐츠 -->
+  <main class="content">
+
+    <!-- ===== GNB: 채용 ===== -->
+    <section id="gnb-job" class="gnb-panel active">
+
+      <!-- 탭 메뉴 (고정) -->
+      <nav class="tabbar">
+        <button class="tab-btn active" data-tab="job">직업</button>
+        <button class="tab-btn" data-tab="region">지역별</button>
+      </nav>
+
+      <!-- ① 직업 -->
+      <section id="tab-job" class="tab-panel active">
+        <h2 class="section-title">직무별 개발 공고</h2>
+        <p class="section-sub">개발 직무별 공고가 한눈에 이어집니다. 특정 직무만 보고 싶다면 아래에서 선택하세요.</p>
+
+        <div class="pill-row" id="job-subcategory-pills"></div>
+
+        <div class="list-toolbar">
+          <span class="result-count" id="job-count"></span>
+          <div class="sort-select">
+            <label>정렬</label>
+            <select id="job-sort"></select>
+          </div>
+        </div>
+
+        <div id="job-sections"></div>
+        <div id="job-cards" class="card-grid"></div>
+      </section>
+
+      <!-- ② 지역별 -->
+      <section id="tab-region" class="tab-panel">
+        <h2 class="section-title">지역별 개발 공고 분포</h2>
+        <p class="section-sub">원의 크기가 클수록 해당 시(市)의 공고 수가 많습니다. 원을 클릭하면 구(區)별 현황을 볼 수 있어요.</p>
+        <div id="map"></div>
+        <div class="region-legend" id="region-legend"></div>
+
+        <div class="pill-row" id="district-pills" style="display:none;"></div>
+
+        <div class="list-toolbar" id="region-toolbar" style="display:none;">
+          <span class="result-count" id="region-count"></span>
+          <div class="sort-select">
+            <label>정렬</label>
+            <select id="region-sort"></select>
+          </div>
+        </div>
+
+        <div id="region-cards" class="card-grid"></div>
+      </section>
+
+    </section>
+
+    <!-- ===== GNB: 이력서 ===== -->
+    <section id="gnb-resume" class="gnb-panel">
+      <h2 class="section-title">내 이력서</h2>
+      <p class="section-sub">이력서 현황과 지원 내역을 확인하세요.</p>
+
+      <div class="resume-summary">
+        <div class="resume-summary-main">
+          <div class="resume-avatar">🧑‍💻</div>
+          <div>
+            <p class="resume-name" id="resume-name"></p>
+            <p class="resume-headline" id="resume-headline"></p>
+          </div>
+        </div>
+        <div class="resume-progress">
+          <div class="resume-progress-bar"><div class="resume-progress-fill" id="resume-progress-fill"></div></div>
+          <span class="resume-progress-label" id="resume-progress-label"></span>
+        </div>
+      </div>
+
+      <div class="list-toolbar">
+        <span class="result-count" id="application-count"></span>
+      </div>
+      <div id="application-cards" class="card-grid"></div>
+    </section>
+
+    <!-- ===== GNB: 고용 이벤트 ===== -->
+    <section id="gnb-event" class="gnb-panel">
+      <h2 class="section-title">고용 이벤트</h2>
+      <p class="section-sub">채용설명회 · 잡페어 등 다가오는 이벤트를 확인하세요.</p>
+
+      <div class="list-toolbar">
+        <span class="result-count" id="event-count"></span>
+      </div>
+      <div id="event-cards" class="card-grid"></div>
+    </section>
+
+    <!-- ===== GNB: 커뮤니티 ===== -->
+    <section id="gnb-community" class="gnb-panel">
+      <h2 class="section-title">커뮤니티</h2>
+      <p class="section-sub">개발자들의 이야기를 나눠보세요.</p>
+
+      <div class="pill-row" id="community-category-pills"></div>
+      <div id="community-list" class="community-list"></div>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
