@@ -405,6 +405,7 @@ html, body {
 }
 
 .job-card .logo {
+  position: relative;
   font-size: 26px;
   width: 44px;
   height: 44px;
@@ -414,6 +415,15 @@ html, body {
   background: var(--bg-soft);
   border-radius: 10px;
   margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.job-card .logo .logo-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .job-card .name {

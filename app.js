@@ -76,7 +76,10 @@ function renderJobCard(job) {
   });
   const reward = formatReward(job);
   div.innerHTML = `
-    <div class="logo">${job.company ? job.company.charAt(0) : "🏢"}</div>
+    <div class="logo">
+      <span>${job.company ? job.company.charAt(0) : "🏢"}</span>
+      ${job.logoUrl ? `<img class="logo-img" src="${job.logoUrl}" alt="" loading="lazy" onerror="this.remove()">` : ""}
+    </div>
     <p class="name">${job.name}</p>
     <p class="company">${job.company}</p>
     <div class="address">📍 ${job.city}${job.district ? " " + job.district : ""}</div>
@@ -441,6 +444,7 @@ function mapSupabaseRow(row) {
     id: row.id,
     name: row.name,
     company: row.company_name,
+    logoUrl: row.logo_url,
     city: row.location || "기타",
     district: parseDistrict(row.full_location),
     subcategory: (row.category_children && row.category_children[0]) || "기타",

@@ -102,6 +102,7 @@ function flattenJob(job) {
     company_id: company.id ?? null,
     company_name: company.name ?? null,
     company_link: company.link ?? null,
+    logo_url: job.title_img?.thumb ?? null,
     country: address.country ?? null,
     location: address.location ?? null,
     full_location: address.full_location ?? null,
