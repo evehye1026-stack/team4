@@ -263,7 +263,7 @@ function initMap() {
   map = L.map("map", { scrollWheelZoom: false }).setView([36.3, 127.8], 6.7);
 
   // 실사 지형/등고선이 있는 기본 OSM 타일 대신, 눈이 덜 피로한 플랫한 배경 지도 사용
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
     attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
     subdomains: "abcd",
     maxZoom: 18,
