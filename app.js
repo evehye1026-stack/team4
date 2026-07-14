@@ -152,77 +152,16 @@ function fillSelect(id, options, valueKey, labelKey) {
   }
 }
 
-// ===== Roles 리스트 (직업 탭 히어로 아래, design.md 6.2절) =====
-const ROLE_TAGLINES = [
-  { match: /프론트|프런트|frontend/i, text: "사용자와 맞닿은 화면을 만듭니다" },
-  { match: /백엔드|서버|backend/i, text: "보이지 않는 힘을 설계합니다" },
-  { match: /모바일|android|ios|mobile/i, text: "손안의 경험을 빚습니다" },
-  { match: /ai|ml|인공지능|머신러닝/i, text: "지능을 코드로 옮깁니다" },
-  { match: /인프라|devops|데브옵스/i, text: "흔들리지 않는 토대를 세웁니다" },
-  { match: /데이터/i, text: "데이터에서 답을 캐냅니다" },
-  { match: /보안|security/i, text: "신뢰의 마지막 방어선을 지킵니다" },
-];
-
-function roleTagline(sub) {
-  const found = ROLE_TAGLINES.find(r => r.match.test(sub));
-  return found ? found.text : "코드로 문제를 풉니다";
-}
-
-let roleRowObserver = null;
-function observeRoleRow(row) {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    row.classList.add("in-view");
-    return;
-  }
-  if (!roleRowObserver) {
-    roleRowObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("in-view");
-          roleRowObserver.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.15 });
-  }
-  roleRowObserver.observe(row);
-}
-
-function renderRolesList() {
-  const wrap = document.getElementById("roles-list");
-  wrap.innerHTML = "";
-  SUBCATEGORIES.filter(sub => sub !== "전체").forEach(sub => {
-    const count = POSTINGS.filter(j => j.subcategory === sub).length;
-    if (count === 0) return;
-
-    const row = document.createElement("button");
-    row.type = "button";
-    row.className = "role-row" + (sub === jobState.subcategory ? " active" : "");
-    row.innerHTML = `
-      <div class="role-row-main">
-        <span class="role-name">${sub}</span>
-        <span class="role-count">${count}</span>
-        <span class="role-arrow" aria-hidden="true">↗</span>
-      </div>
-      <span class="role-tagline">${roleTagline(sub)}</span>
-    `;
-    row.addEventListener("click", () => {
-      jobState.subcategory = sub;
-      renderJobTab();
-    });
-    wrap.appendChild(row);
-    observeRoleRow(row);
-  });
-}
-
 // ===== ① 직업 탭 =====
 let jobState = { subcategory: "전체", sort: "latest" };
 
 function renderJobTab() {
-  renderRolesList();
-
   const pillWrap = document.getElementById("job-subcategory-pills");
   pillWrap.innerHTML = "";
   SUBCATEGORIES.forEach(sub => {
+    const wrap = document.createElement("div");
+    wrap.className = "pill-wrap";
+
     const btn = document.createElement("button");
     btn.className = "pill" + (sub === jobState.subcategory ? " active" : "");
     btn.textContent = sub;
@@ -230,7 +169,30 @@ function renderJobTab() {
       jobState.subcategory = sub;
       renderJobTab();
     });
-    pillWrap.appendChild(btn);
+    wrap.appendChild(btn);
+
+    if (sub !== "전체") {
+      const list = sortJobs(POSTINGS.filter(j => j.subcategory === sub), "latest");
+      if (list.length > 0) {
+        const preview = document.createElement("div");
+        preview.className = "pill-preview";
+        const items = list.slice(0, 4).map(job => `
+          <div class="pill-preview-item">
+            <span class="pill-preview-name">${job.name}</span>
+            <span class="pill-preview-company">${job.company}</span>
+          </div>
+        `).join("");
+        const more = list.length > 4 ? `<div class="pill-preview-more">+${list.length - 4}건 더보기</div>` : "";
+        preview.innerHTML = `
+          <div class="pill-preview-head"><span>${sub}</span><b>${list.length}건</b></div>
+          ${items}
+          ${more}
+        `;
+        wrap.appendChild(preview);
+      }
+    }
+
+    pillWrap.appendChild(wrap);
   });
 
   fillSelect("job-sort", SORT_OPTIONS, "value", "label");
@@ -1012,7 +974,7 @@ function mapSupabaseRow(row) {
     city: row.location || "기타",
     district: parseDistrict(row.full_location),
     fullLocation: row.full_location || "",
-    subcategory: (row.category_children && row.category_children[0]) || "기타",
+    subcategory: mapToSubcategoryGroup(row.category_children && row.category_children[0]),
     categoryChildren: row.category_children || [],
     employmentType: row.employment_type,
     dueTime: row.due_time,

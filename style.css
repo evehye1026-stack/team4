@@ -281,99 +281,83 @@ html, body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ===== Roles 리스트 (design.md 6.2절) ===== */
-.roles-section {
-  margin: 84px 0 36px;
+/* ===== 직무 필터 pill 호버 프리뷰 ===== */
+.pill-wrap {
+  position: relative;
 }
 
-.roles-head {
+.pill-preview {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 220px;
+  max-width: 280px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(7, 11, 36, .16);
+  padding: 14px;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity .15s ease-out, transform .15s ease-out;
+  z-index: 20;
+}
+
+.pill-wrap:hover .pill-preview,
+.pill-wrap:focus-within .pill-preview {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.pill-preview-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
   margin-bottom: 8px;
 }
 
-.roles-list {
+.pill-preview-head b {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.pill-preview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
   border-top: 1px solid var(--line);
 }
 
-.role-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 20px 4px;
-  border-bottom: 1px solid var(--line);
-  cursor: pointer;
-  background: none;
-  border-left: none;
-  border-right: none;
-  width: 100%;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  transition: border-color .2s ease-out;
+.pill-preview-item:first-of-type {
+  border-top: none;
 }
 
-.role-row:hover,
-.role-row.active {
-  border-bottom-color: var(--accent);
-}
-
-.role-row-main {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  min-width: 0;
-}
-
-.role-name {
-  font-family: var(--font-display);
-  font-size: clamp(20px, 2.6vw, 30px);
+.pill-preview-name {
+  font-size: 12.5px;
   font-weight: 600;
-}
-
-.role-count {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  color: var(--signal);
-  background: var(--hero-deep);
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-
-.role-arrow {
-  font-size: 20px;
-  color: var(--ink-sub);
-  transition: transform .2s ease-out, color .2s ease-out;
-  flex: none;
-}
-
-.role-row:hover .role-arrow,
-.role-row.active .role-arrow {
-  color: var(--accent);
-  transform: translate(3px, -3px);
-}
-
-.role-tagline {
-  font-size: 13px;
-  color: var(--ink-sub);
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .role-row {
-    opacity: 0;
-    transform: translateY(10px);
-    transition: opacity .5s ease-out, transform .5s ease-out, border-color .2s ease-out;
-  }
+.pill-preview-company {
+  font-size: 11.5px;
+  color: var(--ink-sub);
+}
 
-  .role-row.in-view {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.pill-preview-more {
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--accent);
+  font-weight: 600;
 }
 
 /* 직무/구 필터 필(pill) */
@@ -1156,8 +1140,6 @@ html, body {
   .hero { margin: -16px -16px 24px; padding: 40px 16px 72px; }
   .hero-search-cta { margin-top: 24px; margin-bottom: -48px; }
 
-  .roles-section { margin: 68px 0 28px; }
-  .role-row { flex-direction: column; align-items: flex-start; gap: 6px; }
 
   .filter-bar { flex-direction: column; }
   .filter-group select { width: 100%; }
