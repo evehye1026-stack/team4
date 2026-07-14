@@ -863,3 +863,77 @@ html, body {
   color: var(--text-sub);
   flex: none;
 }
+
+/* 경력 연차 입력칸은 좁게 */
+#resume-career-years-input {
+  flex: none;
+  width: 140px;
+}
+
+/* ===== 이력서 인쇄 전용 뷰 ===== */
+.resume-print-view { display: none; }
+
+@media print {
+  body * { visibility: hidden; }
+  .resume-print-view, .resume-print-view * { visibility: visible; }
+  .resume-print-view {
+    display: block;
+    position: absolute;
+    inset: 0;
+    padding: 48px;
+    font-family: -apple-system, "Malgun Gothic", sans-serif;
+    color: #111;
+  }
+
+  .resume-print-view h1 {
+    font-size: 26px;
+    margin: 0 0 4px;
+  }
+
+  .resume-print-view > p {
+    margin: 0 0 4px;
+    color: #444;
+    font-size: 13px;
+  }
+
+  .resume-print-view section {
+    margin-top: 22px;
+    break-inside: avoid;
+  }
+
+  .resume-print-view h2 {
+    font-size: 15px;
+    border-bottom: 2px solid #111;
+    padding-bottom: 4px;
+    margin: 0 0 10px;
+  }
+
+  .print-entry {
+    margin-bottom: 10px;
+    break-inside: avoid;
+  }
+
+  .print-entry-head {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  .print-entry-sub {
+    font-size: 12px;
+    color: #444;
+    margin: 2px 0;
+  }
+
+  .print-entry-desc {
+    font-size: 12px;
+    color: #222;
+    white-space: pre-wrap;
+  }
+
+  .print-tags {
+    font-size: 12px;
+    color: #444;
+  }
+}

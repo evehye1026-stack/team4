@@ -366,15 +366,22 @@ function authMessage(text, isError) {
   el.style.color = isError ? "#e5484d" : "";
 }
 
+let latestEducation = [];
+let latestExperience = [];
+let latestProjects = [];
+
 function computeCompleteness(resume) {
   const fields = [
     resume?.name,
     resume?.headline,
     resume?.bio,
+    resume?.phone,
+    resume?.career_type,
     resume?.skills?.length ? "y" : "",
     resume?.github_url || resume?.notion_url || resume?.portfolio_url,
+    latestEducation.length ? "y" : "",
   ];
-  const filled = fields.filter(v => v && v.trim()).length;
+  const filled = fields.filter(v => v && String(v).trim()).length;
   return Math.round((filled / fields.length) * 100);
 }
 
@@ -420,18 +427,145 @@ async function renderResumeTab() {
 
   document.getElementById("resume-name-input").value = resume?.name || "";
   document.getElementById("resume-headline-input").value = resume?.headline || "";
+  document.getElementById("resume-phone-input").value = resume?.phone || "";
+  document.getElementById("resume-career-type-input").value = resume?.career_type || "";
+  document.getElementById("resume-career-years-input").value = resume?.career_years ?? "";
   document.getElementById("resume-bio-input").value = resume?.bio || "";
   document.getElementById("resume-skills-input").value = (resume?.skills || []).join(", ");
   document.getElementById("resume-github-input").value = resume?.github_url || "";
   document.getElementById("resume-notion-input").value = resume?.notion_url || "";
   document.getElementById("resume-portfolio-input").value = resume?.portfolio_url || "";
 
+  await renderEducation();
+  await renderExperience();
+  await renderProjects();
+  await renderApplications();
+
   const completeness = computeCompleteness(resume);
   document.getElementById("resume-progress-fill").style.width = `${completeness}%`;
   document.getElementById("resume-progress-label").textContent = `이력서 완성도 ${completeness}%`;
 
-  await renderProjects();
-  await renderApplications();
+  renderPrintView(resume);
+}
+
+async function renderEducation() {
+  const { data, error } = await supabaseClient
+    .from("resume_education")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) { console.error(error); return; }
+  latestEducation = data;
+
+  document.getElementById("education-count").innerHTML = `학력 <b>${data.length}건</b>`;
+
+  const wrap = document.getElementById("education-cards");
+  wrap.innerHTML = "";
+  if (data.length === 0) {
+    wrap.innerHTML = `<div class="empty-state">아직 등록한 학력이 없습니다.</div>`;
+    return;
+  }
+
+  data.forEach(edu => {
+    const div = document.createElement("div");
+    div.className = "job-card";
+    div.innerHTML = `
+      <p class="name">${edu.school}</p>
+      <p class="company">${[edu.major, edu.degree].filter(Boolean).join(" · ")}</p>
+      <div class="meta-row">
+        ${edu.status ? `<span class="status-tag status-pending">${edu.status}</span>` : ""}
+        ${edu.period ? `<span class="applicants">${edu.period}</span>` : ""}
+      </div>
+      <button type="button" class="app-delete-btn" aria-label="삭제">✕</button>
+    `;
+    div.querySelector(".app-delete-btn").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await supabaseClient.from("resume_education").delete().eq("id", edu.id);
+      await renderEducation();
+      renderPrintView();
+    });
+    wrap.appendChild(div);
+  });
+}
+
+async function renderExperience() {
+  const { data, error } = await supabaseClient
+    .from("resume_experience")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) { console.error(error); return; }
+  latestExperience = data;
+
+  document.getElementById("experience-count").innerHTML = `경력 <b>${data.length}건</b>`;
+
+  const wrap = document.getElementById("experience-cards");
+  wrap.innerHTML = "";
+  if (data.length === 0) {
+    wrap.innerHTML = `<div class="empty-state">아직 등록한 경력이 없습니다.</div>`;
+    return;
+  }
+
+  data.forEach(exp => {
+    const div = document.createElement("div");
+    div.className = "job-card";
+    div.innerHTML = `
+      <p class="name">${exp.company}</p>
+      <p class="company">${[exp.position, exp.period].filter(Boolean).join(" · ")}</p>
+      ${exp.description ? `<p class="intro">${exp.description}</p>` : ""}
+      <button type="button" class="app-delete-btn" aria-label="삭제">✕</button>
+    `;
+    div.querySelector(".app-delete-btn").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await supabaseClient.from("resume_experience").delete().eq("id", exp.id);
+      await renderExperience();
+      renderPrintView();
+    });
+    wrap.appendChild(div);
+  });
+}
+
+function renderPrintView(resume) {
+  document.getElementById("print-name").textContent = document.getElementById("resume-name-input").value || "이름 미입력";
+  document.getElementById("print-headline").textContent = document.getElementById("resume-headline-input").value;
+
+  const phone = document.getElementById("resume-phone-input").value;
+  const contactParts = [currentUser?.email, phone].filter(Boolean);
+  document.getElementById("print-contact").textContent = contactParts.join(" · ");
+
+  document.getElementById("print-bio").textContent = document.getElementById("resume-bio-input").value;
+  document.getElementById("print-skills").textContent = document.getElementById("resume-skills-input").value;
+
+  const careerType = document.getElementById("resume-career-type-input").value;
+  const careerYears = document.getElementById("resume-career-years-input").value;
+  document.getElementById("print-career-summary").textContent = careerType
+    ? `${careerType}${careerType === "경력" && careerYears ? ` · ${careerYears}년차` : ""}`
+    : "";
+
+  document.getElementById("print-education").innerHTML = latestEducation.map(edu => `
+    <div class="print-entry">
+      <div class="print-entry-head"><span>${edu.school}</span><span>${edu.period || ""}</span></div>
+      <div class="print-entry-sub">${[edu.major, edu.degree, edu.status].filter(Boolean).join(" · ")}</div>
+    </div>
+  `).join("") || "<p class=\"print-entry-sub\">등록된 학력이 없습니다.</p>";
+
+  document.getElementById("print-experience").innerHTML = latestExperience.map(exp => `
+    <div class="print-entry">
+      <div class="print-entry-head"><span>${exp.company}</span><span>${exp.period || ""}</span></div>
+      <div class="print-entry-sub">${exp.position || ""}</div>
+      ${exp.description ? `<div class="print-entry-desc">${exp.description}</div>` : ""}
+    </div>
+  `).join("") || "";
+
+  document.getElementById("print-projects").innerHTML = latestProjects.map(proj => `
+    <div class="print-entry">
+      <div class="print-entry-head"><span>${proj.title}</span><span>${proj.period || ""}</span></div>
+      ${proj.description ? `<div class="print-entry-desc">${proj.description}</div>` : ""}
+      ${(proj.tech_stack || []).length ? `<div class="print-tags">${proj.tech_stack.join(", ")}</div>` : ""}
+    </div>
+  `).join("") || "<p class=\"print-entry-sub\">등록된 프로젝트가 없습니다.</p>";
 }
 
 async function renderProjects() {
@@ -442,6 +576,7 @@ async function renderProjects() {
     .order("created_at", { ascending: false });
 
   if (error) { console.error(error); return; }
+  latestProjects = projects;
 
   document.getElementById("project-count").innerHTML = `프로젝트 <b>${projects.length}건</b>`;
 
@@ -468,7 +603,8 @@ async function renderProjects() {
     div.querySelector(".app-delete-btn").addEventListener("click", async (e) => {
       e.stopPropagation();
       await supabaseClient.from("resume_projects").delete().eq("id", proj.id);
-      renderProjects();
+      await renderProjects();
+      renderPrintView();
     });
     wrap.appendChild(div);
   });
@@ -542,6 +678,10 @@ function initResumeTab() {
     if (!currentUser) return;
     const name = document.getElementById("resume-name-input").value.trim();
     const headline = document.getElementById("resume-headline-input").value.trim();
+    const phone = document.getElementById("resume-phone-input").value.trim();
+    const career_type = document.getElementById("resume-career-type-input").value || null;
+    const careerYearsRaw = document.getElementById("resume-career-years-input").value;
+    const career_years = careerYearsRaw ? Number(careerYearsRaw) : null;
     const bio = document.getElementById("resume-bio-input").value.trim();
     const skills = document.getElementById("resume-skills-input").value
       .split(",").map(s => s.trim()).filter(Boolean);
@@ -551,13 +691,55 @@ function initResumeTab() {
     const { error } = await supabaseClient
       .from("resumes")
       .upsert({
-        user_id: currentUser.id, name, headline, bio, skills,
+        user_id: currentUser.id, name, headline, phone, career_type, career_years, bio, skills,
         github_url, notion_url, portfolio_url,
         updated_at: new Date().toISOString(),
       });
     if (error) { alert("저장 실패: " + error.message); return; }
     renderResumeTab();
   });
+
+  document.getElementById("edu-add-btn").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const school = document.getElementById("edu-school-input").value.trim();
+    const major = document.getElementById("edu-major-input").value.trim();
+    const degree = document.getElementById("edu-degree-input").value;
+    const status = document.getElementById("edu-status-input").value;
+    const period = document.getElementById("edu-period-input").value.trim();
+    if (!school) return;
+    const { error } = await supabaseClient.from("resume_education").insert({
+      user_id: currentUser.id, school, major, degree, status, period,
+    });
+    if (error) { alert("추가 실패: " + error.message); return; }
+    document.getElementById("edu-school-input").value = "";
+    document.getElementById("edu-major-input").value = "";
+    document.getElementById("edu-degree-input").value = "";
+    document.getElementById("edu-status-input").value = "";
+    document.getElementById("edu-period-input").value = "";
+    await renderEducation();
+    renderPrintView();
+  });
+
+  document.getElementById("exp-add-btn").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const company = document.getElementById("exp-company-input").value.trim();
+    const position = document.getElementById("exp-position-input").value.trim();
+    const period = document.getElementById("exp-period-input").value.trim();
+    const description = document.getElementById("exp-desc-input").value.trim();
+    if (!company) return;
+    const { error } = await supabaseClient.from("resume_experience").insert({
+      user_id: currentUser.id, company, position, period, description,
+    });
+    if (error) { alert("추가 실패: " + error.message); return; }
+    document.getElementById("exp-company-input").value = "";
+    document.getElementById("exp-position-input").value = "";
+    document.getElementById("exp-period-input").value = "";
+    document.getElementById("exp-desc-input").value = "";
+    await renderExperience();
+    renderPrintView();
+  });
+
+  document.getElementById("resume-print-btn").addEventListener("click", () => window.print());
 
   document.getElementById("proj-add-btn").addEventListener("click", async () => {
     if (!currentUser) return;
