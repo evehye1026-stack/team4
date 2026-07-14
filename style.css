@@ -617,6 +617,16 @@ html, body {
   margin-right: 4px;
 }
 
+.region-legend span.dot.hub-dot {
+  background: #ff7a3d;
+  opacity: 1;
+}
+
+.hub-legend-item {
+  font-weight: 700;
+  color: var(--text);
+}
+
 /* 이력서 요약 */
 .resume-summary {
   display: flex;

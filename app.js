@@ -247,7 +247,7 @@ function applySearchFilter() {
 
 // ===== ③ 지역별 탭 (지도) =====
 let map, mapInitialized = false;
-let regionState = { city: null, district: null, sort: "latest" };
+let regionState = { city: null, district: null, hub: null, sort: "latest" };
 
 function countByCity(list) {
   const map = {};
@@ -255,11 +255,17 @@ function countByCity(list) {
   return map;
 }
 
+function jobsForHub(hub) {
+  return POSTINGS.filter(j => hub.keywords.some(k => j.fullLocation.includes(k)));
+}
+
 function initMap() {
   map = L.map("map", { scrollWheelZoom: false }).setView([36.3, 127.8], 6.7);
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: '&copy; OpenStreetMap contributors',
+  // 실사 지형/등고선이 있는 기본 OSM 타일 대신, 눈이 덜 피로한 플랫한 배경 지도 사용
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    subdomains: "abcd",
     maxZoom: 18,
   }).addTo(map);
 
@@ -269,14 +275,14 @@ function initMap() {
   Object.entries(CITY_COORDS).forEach(([city, coord]) => {
     const cnt = counts[city] || 0;
     if (cnt === 0) return;
-    const radius = 14 + (cnt / maxCount) * 26;
+    const radius = 12 + (cnt / maxCount) * 22;
 
     const marker = L.circleMarker(coord, {
       radius,
-      color: "#2f6feb",
+      color: "#a9bcdb",
       weight: 1,
-      fillColor: "#2f6feb",
-      fillOpacity: 0.45,
+      fillColor: "#7d93c2",
+      fillOpacity: 0.3,
     })
       .addTo(map)
       .bindTooltip(`${city} ${cnt}건`, { permanent: false });
@@ -284,7 +290,47 @@ function initMap() {
     marker.on("click", () => selectCity(city));
   });
 
+  // 주요 업무 허브(강남·판교 등) 강조 마커 — 지하철역 좌표는 없어 대표 지점으로 근사
+  const hubCounts = JOB_HUBS
+    .map(hub => ({ ...hub, count: jobsForHub(hub).length }))
+    .filter(h => h.count > 0);
+  const maxHubCount = Math.max(...hubCounts.map(h => h.count), 1);
+
+  hubCounts.forEach(hub => {
+    const radius = 7 + (hub.count / maxHubCount) * 11;
+
+    L.circleMarker(hub.coords, {
+      radius: radius + 7,
+      stroke: false,
+      fillColor: "#ff7a3d",
+      fillOpacity: 0.18,
+      interactive: false,
+    }).addTo(map);
+
+    const hubMarker = L.circleMarker(hub.coords, {
+      radius,
+      color: "#ffffff",
+      weight: 2,
+      fillColor: "#ff7a3d",
+      fillOpacity: 0.95,
+    })
+      .addTo(map)
+      .bindTooltip(`⭐ ${hub.name} ${hub.count}건`, { permanent: false });
+
+    hubMarker.on("click", () => selectHub(hub));
+  });
+
   mapInitialized = true;
+
+  const hubLegend = document.getElementById("hub-legend");
+  hubLegend.innerHTML = hubCounts
+    .sort((a, b) => b.count - a.count)
+    .map((hub, i) => `<span class="legend-item hub-legend-item" data-hub-index="${i}"><span class="dot hub-dot"></span>${hub.name} ${hub.count}건</span>`)
+    .join("");
+  hubLegend.querySelectorAll(".legend-item").forEach(el => {
+    el.style.cursor = "pointer";
+    el.addEventListener("click", () => selectHub(hubCounts[Number(el.dataset.hubIndex)]));
+  });
 
   const legend = document.getElementById("region-legend");
   legend.innerHTML = Object.entries(counts)
@@ -299,6 +345,15 @@ function initMap() {
 
 function selectCity(city) {
   regionState.city = city;
+  regionState.district = null;
+  regionState.hub = null;
+  renderDistrictPills();
+  renderRegionCards();
+}
+
+function selectHub(hub) {
+  regionState.hub = hub;
+  regionState.city = null;
   regionState.district = null;
   renderDistrictPills();
   renderRegionCards();
@@ -334,7 +389,7 @@ function renderDistrictPills() {
 
 function renderRegionCards() {
   const toolbar = document.getElementById("region-toolbar");
-  if (!regionState.city) {
+  if (!regionState.city && !regionState.hub) {
     toolbar.style.display = "none";
     document.getElementById("region-cards").innerHTML = "";
     return;
@@ -348,11 +403,17 @@ function renderRegionCards() {
     renderRegionCards();
   };
 
-  let list = POSTINGS.filter(j => j.city === regionState.city);
-  if (regionState.district) list = list.filter(j => j.district === regionState.district);
+  let list;
+  if (regionState.hub) {
+    list = jobsForHub(regionState.hub);
+  } else {
+    list = POSTINGS.filter(j => j.city === regionState.city);
+    if (regionState.district) list = list.filter(j => j.district === regionState.district);
+  }
   list = sortJobs(list, regionState.sort);
 
-  document.getElementById("region-count").innerHTML = `총 <b>${list.length}건</b>`;
+  const label = regionState.hub ? `⭐ ${regionState.hub.name}` : "";
+  document.getElementById("region-count").innerHTML = `${label} 총 <b>${list.length}건</b>`;
   renderCardList(document.getElementById("region-cards"), list);
 }
 
@@ -880,6 +941,7 @@ function mapSupabaseRow(row) {
     logoUrl: row.logo_url,
     city: row.location || "기타",
     district: parseDistrict(row.full_location),
+    fullLocation: row.full_location || "",
     subcategory: (row.category_children && row.category_children[0]) || "기타",
     categoryChildren: row.category_children || [],
     employmentType: row.employment_type,
