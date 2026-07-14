@@ -29,6 +29,16 @@ const CITY_COORDS = {
   "제주": [33.4996, 126.5312],
 };
 
+// 원티드에는 지하철역 좌표가 없어(주소는 문자열만 제공), 잘 알려진 IT 업무 허브를
+// full_location 텍스트 키워드로 탐지해 지도에 강조 표시한다 (역세권 강조의 근사치).
+const JOB_HUBS = [
+  { name: "강남·테헤란로", coords: [37.5006, 127.0364], keywords: ["강남", "테헤란로", "역삼"] },
+  { name: "판교", coords: [37.4019, 127.1086], keywords: ["판교"] },
+  { name: "여의도", coords: [37.5219, 126.9245], keywords: ["여의도"] },
+  { name: "구로·가산디지털단지", coords: [37.4820, 126.8945], keywords: ["구로디지털", "가산디지털", "구로구", "금천구"] },
+  { name: "성수", coords: [37.5445, 127.0557], keywords: ["성수"] },
+];
+
 const EMPLOYMENT_TYPE_LABELS = { regular: "정규직", contract: "계약직", intern: "인턴" };
 function employmentTypeLabel(type) {
   return EMPLOYMENT_TYPE_LABELS[type] || type || "-";

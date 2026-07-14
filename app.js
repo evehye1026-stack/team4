@@ -64,6 +64,12 @@ globalSearchBtn.addEventListener("click", () => {
 });
 document.getElementById("search-drawer-close").addEventListener("click", closeSearchDrawer);
 searchDrawerBackdrop.addEventListener("click", closeSearchDrawer);
+document.getElementById("hero-search-cta").addEventListener("click", openSearchDrawer);
+
+// ===== 공지 배너 닫기 =====
+document.getElementById("announce-close").addEventListener("click", () => {
+  document.getElementById("announce-banner").classList.add("closed");
+});
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && searchDrawer.classList.contains("open")) closeSearchDrawer();
   if (e.key === "Escape" && authDrawer.classList.contains("open")) closeAuthDrawer();
@@ -146,10 +152,74 @@ function fillSelect(id, options, valueKey, labelKey) {
   }
 }
 
+// ===== Roles 리스트 (직업 탭 히어로 아래, design.md 6.2절) =====
+const ROLE_TAGLINES = [
+  { match: /프론트|프런트|frontend/i, text: "사용자와 맞닿은 화면을 만듭니다" },
+  { match: /백엔드|서버|backend/i, text: "보이지 않는 힘을 설계합니다" },
+  { match: /모바일|android|ios|mobile/i, text: "손안의 경험을 빚습니다" },
+  { match: /ai|ml|인공지능|머신러닝/i, text: "지능을 코드로 옮깁니다" },
+  { match: /인프라|devops|데브옵스/i, text: "흔들리지 않는 토대를 세웁니다" },
+  { match: /데이터/i, text: "데이터에서 답을 캐냅니다" },
+  { match: /보안|security/i, text: "신뢰의 마지막 방어선을 지킵니다" },
+];
+
+function roleTagline(sub) {
+  const found = ROLE_TAGLINES.find(r => r.match.test(sub));
+  return found ? found.text : "코드로 문제를 풉니다";
+}
+
+let roleRowObserver = null;
+function observeRoleRow(row) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    row.classList.add("in-view");
+    return;
+  }
+  if (!roleRowObserver) {
+    roleRowObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("in-view");
+          roleRowObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+  }
+  roleRowObserver.observe(row);
+}
+
+function renderRolesList() {
+  const wrap = document.getElementById("roles-list");
+  wrap.innerHTML = "";
+  SUBCATEGORIES.filter(sub => sub !== "전체").forEach(sub => {
+    const count = POSTINGS.filter(j => j.subcategory === sub).length;
+    if (count === 0) return;
+
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "role-row" + (sub === jobState.subcategory ? " active" : "");
+    row.innerHTML = `
+      <div class="role-row-main">
+        <span class="role-name">${sub}</span>
+        <span class="role-count">${count}</span>
+        <span class="role-arrow" aria-hidden="true">↗</span>
+      </div>
+      <span class="role-tagline">${roleTagline(sub)}</span>
+    `;
+    row.addEventListener("click", () => {
+      jobState.subcategory = sub;
+      renderJobTab();
+    });
+    wrap.appendChild(row);
+    observeRoleRow(row);
+  });
+}
+
 // ===== ① 직업 탭 =====
 let jobState = { subcategory: "전체", sort: "latest" };
 
 function renderJobTab() {
+  renderRolesList();
+
   const pillWrap = document.getElementById("job-subcategory-pills");
   pillWrap.innerHTML = "";
   SUBCATEGORIES.forEach(sub => {
@@ -247,7 +317,7 @@ function applySearchFilter() {
 
 // ===== ③ 지역별 탭 (지도) =====
 let map, mapInitialized = false;
-let regionState = { city: null, district: null, sort: "latest" };
+let regionState = { city: null, district: null, hub: null, sort: "latest" };
 
 function countByCity(list) {
   const map = {};
@@ -255,11 +325,17 @@ function countByCity(list) {
   return map;
 }
 
+function jobsForHub(hub) {
+  return POSTINGS.filter(j => hub.keywords.some(k => j.fullLocation.includes(k)));
+}
+
 function initMap() {
   map = L.map("map", { scrollWheelZoom: false }).setView([36.3, 127.8], 6.7);
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: '&copy; OpenStreetMap contributors',
+  // 실사 지형/등고선이 있는 기본 OSM 타일 대신, 눈이 덜 피로한 플랫한 배경 지도 사용
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    subdomains: "abcd",
     maxZoom: 18,
   }).addTo(map);
 
@@ -269,14 +345,14 @@ function initMap() {
   Object.entries(CITY_COORDS).forEach(([city, coord]) => {
     const cnt = counts[city] || 0;
     if (cnt === 0) return;
-    const radius = 14 + (cnt / maxCount) * 26;
+    const radius = 12 + (cnt / maxCount) * 22;
 
     const marker = L.circleMarker(coord, {
       radius,
-      color: "#2f6feb",
+      color: "#8E7BFF",
       weight: 1,
-      fillColor: "#2f6feb",
-      fillOpacity: 0.45,
+      fillColor: "#6C4DF6",
+      fillOpacity: 0.3,
     })
       .addTo(map)
       .bindTooltip(`${city} ${cnt}건`, { permanent: false });
@@ -284,7 +360,47 @@ function initMap() {
     marker.on("click", () => selectCity(city));
   });
 
+  // 주요 업무 허브(강남·판교 등) 강조 마커 — 지하철역 좌표는 없어 대표 지점으로 근사
+  const hubCounts = JOB_HUBS
+    .map(hub => ({ ...hub, count: jobsForHub(hub).length }))
+    .filter(h => h.count > 0);
+  const maxHubCount = Math.max(...hubCounts.map(h => h.count), 1);
+
+  hubCounts.forEach(hub => {
+    const radius = 7 + (hub.count / maxHubCount) * 11;
+
+    L.circleMarker(hub.coords, {
+      radius: radius + 7,
+      stroke: false,
+      fillColor: "#4DE3D0",
+      fillOpacity: 0.18,
+      interactive: false,
+    }).addTo(map);
+
+    const hubMarker = L.circleMarker(hub.coords, {
+      radius,
+      color: "#ffffff",
+      weight: 2,
+      fillColor: "#4DE3D0",
+      fillOpacity: 0.95,
+    })
+      .addTo(map)
+      .bindTooltip(`⭐ ${hub.name} ${hub.count}건`, { permanent: false });
+
+    hubMarker.on("click", () => selectHub(hub));
+  });
+
   mapInitialized = true;
+
+  const hubLegend = document.getElementById("hub-legend");
+  hubLegend.innerHTML = hubCounts
+    .sort((a, b) => b.count - a.count)
+    .map((hub, i) => `<span class="legend-item hub-legend-item" data-hub-index="${i}"><span class="dot hub-dot"></span>${hub.name} ${hub.count}건</span>`)
+    .join("");
+  hubLegend.querySelectorAll(".legend-item").forEach(el => {
+    el.style.cursor = "pointer";
+    el.addEventListener("click", () => selectHub(hubCounts[Number(el.dataset.hubIndex)]));
+  });
 
   const legend = document.getElementById("region-legend");
   legend.innerHTML = Object.entries(counts)
@@ -299,6 +415,15 @@ function initMap() {
 
 function selectCity(city) {
   regionState.city = city;
+  regionState.district = null;
+  regionState.hub = null;
+  renderDistrictPills();
+  renderRegionCards();
+}
+
+function selectHub(hub) {
+  regionState.hub = hub;
+  regionState.city = null;
   regionState.district = null;
   renderDistrictPills();
   renderRegionCards();
@@ -334,7 +459,7 @@ function renderDistrictPills() {
 
 function renderRegionCards() {
   const toolbar = document.getElementById("region-toolbar");
-  if (!regionState.city) {
+  if (!regionState.city && !regionState.hub) {
     toolbar.style.display = "none";
     document.getElementById("region-cards").innerHTML = "";
     return;
@@ -348,11 +473,17 @@ function renderRegionCards() {
     renderRegionCards();
   };
 
-  let list = POSTINGS.filter(j => j.city === regionState.city);
-  if (regionState.district) list = list.filter(j => j.district === regionState.district);
+  let list;
+  if (regionState.hub) {
+    list = jobsForHub(regionState.hub);
+  } else {
+    list = POSTINGS.filter(j => j.city === regionState.city);
+    if (regionState.district) list = list.filter(j => j.district === regionState.district);
+  }
   list = sortJobs(list, regionState.sort);
 
-  document.getElementById("region-count").innerHTML = `총 <b>${list.length}건</b>`;
+  const label = regionState.hub ? `⭐ ${regionState.hub.name}` : "";
+  document.getElementById("region-count").innerHTML = `${label} 총 <b>${list.length}건</b>`;
   renderCardList(document.getElementById("region-cards"), list);
 }
 
@@ -880,6 +1011,7 @@ function mapSupabaseRow(row) {
     logoUrl: row.logo_url,
     city: row.location || "기타",
     district: parseDistrict(row.full_location),
+    fullLocation: row.full_location || "",
     subcategory: (row.category_children && row.category_children[0]) || "기타",
     categoryChildren: row.category_children || [],
     employmentType: row.employment_type,
