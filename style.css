@@ -221,7 +221,6 @@ html, body {
   appearance: none;
   border: none;
   background: none;
-  margin-left: auto;
   font-size: 19px;
   padding: 8px 10px;
   border-radius: 8px;
@@ -231,6 +230,26 @@ html, body {
 }
 
 .global-search-btn:hover { background: var(--bg-soft); }
+
+/* 상단바 우측 (로그인/회원가입 · 계정 · 검색) */
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topbar-auth {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-account-email {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-sub);
+}
 
 /* 전역 검색 드로어 (화면 오른쪽에서 슬라이드 인) */
 .search-drawer-backdrop {
@@ -565,6 +584,10 @@ html, body {
   font-size: 14px;
 }
 
+.empty-state .pill {
+  margin-top: 14px;
+}
+
 /* 지도 */
 #map {
   width: 100%;
@@ -699,7 +722,20 @@ html, body {
   margin-bottom: 0;
 }
 
-/* 지원 내역 추가 폼 */
+.resume-links-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.resume-links-row .search-input {
+  flex: 1;
+  min-width: 140px;
+  margin-bottom: 0;
+}
+
+/* 프로젝트 / 지원 내역 추가 폼 */
+.project-form,
 .application-form {
   display: flex;
   flex-wrap: wrap;
@@ -708,11 +744,20 @@ html, body {
   margin-bottom: 16px;
 }
 
+.project-form .search-input,
 .application-form .search-input {
   width: auto;
   flex: 1;
   min-width: 160px;
   margin-bottom: 0;
+}
+
+.project-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--blue);
 }
 
 .app-delete-btn {

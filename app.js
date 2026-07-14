@@ -66,7 +66,31 @@ document.getElementById("search-drawer-close").addEventListener("click", closeSe
 searchDrawerBackdrop.addEventListener("click", closeSearchDrawer);
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && searchDrawer.classList.contains("open")) closeSearchDrawer();
+  if (e.key === "Escape" && authDrawer.classList.contains("open")) closeAuthDrawer();
 });
+
+// ===== 로그인/회원가입 드로어 (상단바 우측) =====
+const authDrawer = document.getElementById("auth-drawer");
+const authDrawerBackdrop = document.getElementById("auth-drawer-backdrop");
+
+function openAuthDrawer() {
+  authDrawer.classList.add("open");
+  authDrawerBackdrop.classList.add("open");
+  authDrawer.setAttribute("aria-hidden", "false");
+  document.getElementById("auth-email").focus();
+}
+
+function closeAuthDrawer() {
+  authDrawer.classList.remove("open");
+  authDrawerBackdrop.classList.remove("open");
+  authDrawer.setAttribute("aria-hidden", "true");
+}
+
+document.getElementById("topbar-login-btn").addEventListener("click", openAuthDrawer);
+document.getElementById("topbar-signup-btn").addEventListener("click", openAuthDrawer);
+document.getElementById("auth-drawer-close").addEventListener("click", closeAuthDrawer);
+authDrawerBackdrop.addEventListener("click", closeAuthDrawer);
+document.getElementById("topbar-logout-btn").addEventListener("click", () => supabaseClient.auth.signOut());
 
 // ===== 공통: 카드 렌더 =====
 function renderJobCard(job) {
@@ -343,27 +367,50 @@ function authMessage(text, isError) {
 }
 
 function computeCompleteness(resume) {
-  const fields = [resume?.name, resume?.headline, resume?.bio];
+  const fields = [
+    resume?.name,
+    resume?.headline,
+    resume?.bio,
+    resume?.skills?.length ? "y" : "",
+    resume?.github_url || resume?.notion_url || resume?.portfolio_url,
+  ];
   const filled = fields.filter(v => v && v.trim()).length;
   return Math.round((filled / fields.length) * 100);
+}
+
+async function renderAuthTab() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  currentUser = session?.user ?? null;
+
+  const guestArea = document.getElementById("topbar-auth-guest");
+  const userArea = document.getElementById("topbar-auth-user");
+
+  if (currentUser) {
+    guestArea.style.display = "none";
+    userArea.style.display = "flex";
+    document.getElementById("topbar-account-email").textContent = currentUser.email;
+    closeAuthDrawer();
+  } else {
+    guestArea.style.display = "flex";
+    userArea.style.display = "none";
+  }
 }
 
 async function renderResumeTab() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   currentUser = session?.user ?? null;
 
-  const gate = document.getElementById("resume-auth-gate");
+  const locked = document.getElementById("resume-locked");
   const content = document.getElementById("resume-content");
 
   if (!currentUser) {
-    gate.style.display = "block";
+    locked.style.display = "block";
     content.style.display = "none";
     return;
   }
 
-  gate.style.display = "none";
+  locked.style.display = "none";
   content.style.display = "block";
-  document.getElementById("resume-logged-in-as").innerHTML = `<b>${currentUser.email}</b>님으로 로그인됨`;
 
   const { data: resume } = await supabaseClient
     .from("resumes")
@@ -374,12 +421,57 @@ async function renderResumeTab() {
   document.getElementById("resume-name-input").value = resume?.name || "";
   document.getElementById("resume-headline-input").value = resume?.headline || "";
   document.getElementById("resume-bio-input").value = resume?.bio || "";
+  document.getElementById("resume-skills-input").value = (resume?.skills || []).join(", ");
+  document.getElementById("resume-github-input").value = resume?.github_url || "";
+  document.getElementById("resume-notion-input").value = resume?.notion_url || "";
+  document.getElementById("resume-portfolio-input").value = resume?.portfolio_url || "";
 
   const completeness = computeCompleteness(resume);
   document.getElementById("resume-progress-fill").style.width = `${completeness}%`;
   document.getElementById("resume-progress-label").textContent = `이력서 완성도 ${completeness}%`;
 
+  await renderProjects();
   await renderApplications();
+}
+
+async function renderProjects() {
+  const { data: projects, error } = await supabaseClient
+    .from("resume_projects")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) { console.error(error); return; }
+
+  document.getElementById("project-count").innerHTML = `프로젝트 <b>${projects.length}건</b>`;
+
+  const wrap = document.getElementById("project-cards");
+  wrap.innerHTML = "";
+  if (projects.length === 0) {
+    wrap.innerHTML = `<div class="empty-state">아직 등록한 프로젝트가 없습니다.</div>`;
+    return;
+  }
+
+  projects.forEach(proj => {
+    const div = document.createElement("div");
+    div.className = "job-card";
+    div.innerHTML = `
+      <p class="name">${proj.title}</p>
+      ${proj.period ? `<p class="company">${proj.period}</p>` : ""}
+      ${proj.description ? `<p class="intro">${proj.description}</p>` : ""}
+      <div class="tags">
+        ${(proj.tech_stack || []).map(t => `<span class="tag">${t}</span>`).join("")}
+      </div>
+      ${proj.project_url ? `<a class="project-link" href="${proj.project_url}" target="_blank" rel="noopener">링크 보기 ↗</a>` : ""}
+      <button type="button" class="app-delete-btn" aria-label="삭제">✕</button>
+    `;
+    div.querySelector(".app-delete-btn").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await supabaseClient.from("resume_projects").delete().eq("id", proj.id);
+      renderProjects();
+    });
+    wrap.appendChild(div);
+  });
 }
 
 async function renderApplications() {
@@ -425,6 +517,8 @@ async function renderApplications() {
 function initResumeTab() {
   fillSelect("app-status-input", APPLICATION_STATUS_OPTIONS);
 
+  document.getElementById("resume-goto-login-btn").addEventListener("click", openAuthDrawer);
+
   document.getElementById("auth-signup-btn").addEventListener("click", async () => {
     const email = document.getElementById("auth-email").value.trim();
     const password = document.getElementById("auth-password").value;
@@ -444,18 +538,51 @@ function initResumeTab() {
     if (error) authMessage(error.message, true);
   });
 
-  document.getElementById("auth-logout-btn").addEventListener("click", () => supabaseClient.auth.signOut());
-
   document.getElementById("resume-save-btn").addEventListener("click", async () => {
     if (!currentUser) return;
     const name = document.getElementById("resume-name-input").value.trim();
     const headline = document.getElementById("resume-headline-input").value.trim();
     const bio = document.getElementById("resume-bio-input").value.trim();
+    const skills = document.getElementById("resume-skills-input").value
+      .split(",").map(s => s.trim()).filter(Boolean);
+    const github_url = document.getElementById("resume-github-input").value.trim();
+    const notion_url = document.getElementById("resume-notion-input").value.trim();
+    const portfolio_url = document.getElementById("resume-portfolio-input").value.trim();
     const { error } = await supabaseClient
       .from("resumes")
-      .upsert({ user_id: currentUser.id, name, headline, bio, updated_at: new Date().toISOString() });
+      .upsert({
+        user_id: currentUser.id, name, headline, bio, skills,
+        github_url, notion_url, portfolio_url,
+        updated_at: new Date().toISOString(),
+      });
     if (error) { alert("저장 실패: " + error.message); return; }
     renderResumeTab();
+  });
+
+  document.getElementById("proj-add-btn").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const title = document.getElementById("proj-title-input").value.trim();
+    const period = document.getElementById("proj-period-input").value.trim();
+    const techStack = document.getElementById("proj-tech-input").value
+      .split(",").map(s => s.trim()).filter(Boolean);
+    const projectUrl = document.getElementById("proj-url-input").value.trim();
+    const description = document.getElementById("proj-desc-input").value.trim();
+    if (!title) return;
+    const { error } = await supabaseClient.from("resume_projects").insert({
+      user_id: currentUser.id,
+      title,
+      period,
+      tech_stack: techStack,
+      project_url: projectUrl || null,
+      description,
+    });
+    if (error) { alert("추가 실패: " + error.message); return; }
+    document.getElementById("proj-title-input").value = "";
+    document.getElementById("proj-period-input").value = "";
+    document.getElementById("proj-tech-input").value = "";
+    document.getElementById("proj-url-input").value = "";
+    document.getElementById("proj-desc-input").value = "";
+    renderProjects();
   });
 
   document.getElementById("app-add-btn").addEventListener("click", async () => {
@@ -473,7 +600,10 @@ function initResumeTab() {
     renderApplications();
   });
 
-  supabaseClient.auth.onAuthStateChange(() => renderResumeTab());
+  supabaseClient.auth.onAuthStateChange(() => {
+    renderAuthTab();
+    renderResumeTab();
+  });
 }
 
 // ===== ⑤ 고용 이벤트 탭 =====

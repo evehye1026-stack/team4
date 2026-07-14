@@ -14,7 +14,17 @@
   <header class="topbar">
     <h1>개발자 채용 대시보드</h1>
     <span class="badge">개발 직군 전용</span>
-    <button class="global-search-btn" id="global-search-btn" aria-label="검색 열기" aria-expanded="false" aria-controls="search-drawer">🔍</button>
+    <div class="topbar-right">
+      <div class="topbar-auth" id="topbar-auth-guest">
+        <button class="pill" id="topbar-login-btn">로그인</button>
+        <button class="pill active" id="topbar-signup-btn">회원가입</button>
+      </div>
+      <div class="topbar-auth" id="topbar-auth-user" style="display:none;">
+        <span class="topbar-account-email" id="topbar-account-email"></span>
+        <button class="pill" id="topbar-logout-btn">로그아웃</button>
+      </div>
+      <button class="global-search-btn" id="global-search-btn" aria-label="검색 열기" aria-expanded="false" aria-controls="search-drawer">🔍</button>
+    </div>
   </header>
 
   <!-- 전역 검색 드로어 (화면 오른쪽에서 슬라이드 인) -->
@@ -42,6 +52,22 @@
     </div>
 
     <div id="search-cards" class="card-grid search-drawer-cards"></div>
+  </aside>
+
+  <!-- 로그인/회원가입 드로어 (화면 오른쪽에서 슬라이드 인) -->
+  <div class="search-drawer-backdrop" id="auth-drawer-backdrop"></div>
+  <aside class="search-drawer" id="auth-drawer" aria-hidden="true">
+    <div class="search-drawer-head">
+      <h3>로그인 / 회원가입</h3>
+      <button class="search-drawer-close" id="auth-drawer-close" aria-label="닫기">✕</button>
+    </div>
+    <input type="email" id="auth-email" class="search-input" placeholder="이메일">
+    <input type="password" id="auth-password" class="search-input" placeholder="비밀번호 (6자 이상)">
+    <div class="auth-actions">
+      <button class="pill active" id="auth-login-btn">로그인</button>
+      <button class="pill" id="auth-signup-btn">회원가입</button>
+    </div>
+    <p class="auth-message" id="auth-message"></p>
   </aside>
 
   <!-- GNB (최상단 내비게이션) -->
@@ -110,24 +136,14 @@
       <h2 class="section-title">내 이력서</h2>
       <p class="section-sub">이력서 현황과 지원 내역을 직접 기록하고 관리하세요.</p>
 
-      <!-- 로그인 전 -->
-      <div id="resume-auth-gate" class="auth-gate">
-        <input type="email" id="auth-email" class="search-input" placeholder="이메일">
-        <input type="password" id="auth-password" class="search-input" placeholder="비밀번호 (6자 이상)">
-        <div class="auth-actions">
-          <button class="pill active" id="auth-login-btn">로그인</button>
-          <button class="pill" id="auth-signup-btn">회원가입</button>
-        </div>
-        <p class="auth-message" id="auth-message"></p>
+      <!-- 로그인 안 한 상태 -->
+      <div id="resume-locked" class="empty-state">
+        이력서는 로그인 후 이용할 수 있어요.
+        <br><button class="pill active" id="resume-goto-login-btn">로그인 / 회원가입 하러 가기</button>
       </div>
 
-      <!-- 로그인 후 -->
+      <!-- 로그인한 상태 -->
       <div id="resume-content" style="display:none;">
-        <div class="list-toolbar">
-          <span class="result-count" id="resume-logged-in-as"></span>
-          <button class="pill" id="auth-logout-btn">로그아웃</button>
-        </div>
-
         <div class="resume-summary">
           <div class="resume-summary-main">
             <div class="resume-avatar">🧑‍💻</div>
@@ -135,6 +151,12 @@
               <input type="text" id="resume-name-input" class="search-input" placeholder="이름">
               <input type="text" id="resume-headline-input" class="search-input" placeholder="한줄 소개 (예: 백엔드 개발자 · 3년차)">
               <textarea id="resume-bio-input" class="search-input" rows="3" placeholder="자기소개"></textarea>
+              <input type="text" id="resume-skills-input" class="search-input" placeholder="사용 가능 언어·기술 스택 (쉼표로 구분, 예: JavaScript, Python, React)">
+              <div class="resume-links-row">
+                <input type="url" id="resume-github-input" class="search-input" placeholder="GitHub 주소">
+                <input type="url" id="resume-notion-input" class="search-input" placeholder="Notion 주소">
+                <input type="url" id="resume-portfolio-input" class="search-input" placeholder="포트폴리오 주소">
+              </div>
               <button class="pill active" id="resume-save-btn">저장</button>
             </div>
           </div>
@@ -143,6 +165,21 @@
             <span class="resume-progress-label" id="resume-progress-label"></span>
           </div>
         </div>
+
+        <h3 class="section-title">프로젝트</h3>
+        <div class="project-form">
+          <input type="text" id="proj-title-input" class="search-input" placeholder="프로젝트명">
+          <input type="text" id="proj-period-input" class="search-input" placeholder="기간 (예: 2024.01 - 2024.06)">
+          <input type="text" id="proj-tech-input" class="search-input" placeholder="기술 스택 (쉼표 구분)">
+          <input type="url" id="proj-url-input" class="search-input" placeholder="프로젝트 링크 (선택)">
+          <textarea id="proj-desc-input" class="search-input" rows="2" placeholder="프로젝트 설명"></textarea>
+          <button class="pill active" id="proj-add-btn">프로젝트 추가</button>
+        </div>
+
+        <div class="list-toolbar">
+          <span class="result-count" id="project-count"></span>
+        </div>
+        <div id="project-cards" class="card-grid"></div>
 
         <h3 class="section-title">지원 내역</h3>
         <div class="application-form">
