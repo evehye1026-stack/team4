@@ -64,6 +64,12 @@ globalSearchBtn.addEventListener("click", () => {
 });
 document.getElementById("search-drawer-close").addEventListener("click", closeSearchDrawer);
 searchDrawerBackdrop.addEventListener("click", closeSearchDrawer);
+document.getElementById("hero-search-cta").addEventListener("click", openSearchDrawer);
+
+// ===== 공지 배너 닫기 =====
+document.getElementById("announce-close").addEventListener("click", () => {
+  document.getElementById("announce-banner").classList.add("closed");
+});
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && searchDrawer.classList.contains("open")) closeSearchDrawer();
   if (e.key === "Escape" && authDrawer.classList.contains("open")) closeAuthDrawer();
@@ -146,10 +152,74 @@ function fillSelect(id, options, valueKey, labelKey) {
   }
 }
 
+// ===== Roles 리스트 (직업 탭 히어로 아래, design.md 6.2절) =====
+const ROLE_TAGLINES = [
+  { match: /프론트|프런트|frontend/i, text: "사용자와 맞닿은 화면을 만듭니다" },
+  { match: /백엔드|서버|backend/i, text: "보이지 않는 힘을 설계합니다" },
+  { match: /모바일|android|ios|mobile/i, text: "손안의 경험을 빚습니다" },
+  { match: /ai|ml|인공지능|머신러닝/i, text: "지능을 코드로 옮깁니다" },
+  { match: /인프라|devops|데브옵스/i, text: "흔들리지 않는 토대를 세웁니다" },
+  { match: /데이터/i, text: "데이터에서 답을 캐냅니다" },
+  { match: /보안|security/i, text: "신뢰의 마지막 방어선을 지킵니다" },
+];
+
+function roleTagline(sub) {
+  const found = ROLE_TAGLINES.find(r => r.match.test(sub));
+  return found ? found.text : "코드로 문제를 풉니다";
+}
+
+let roleRowObserver = null;
+function observeRoleRow(row) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    row.classList.add("in-view");
+    return;
+  }
+  if (!roleRowObserver) {
+    roleRowObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("in-view");
+          roleRowObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+  }
+  roleRowObserver.observe(row);
+}
+
+function renderRolesList() {
+  const wrap = document.getElementById("roles-list");
+  wrap.innerHTML = "";
+  SUBCATEGORIES.filter(sub => sub !== "전체").forEach(sub => {
+    const count = POSTINGS.filter(j => j.subcategory === sub).length;
+    if (count === 0) return;
+
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "role-row" + (sub === jobState.subcategory ? " active" : "");
+    row.innerHTML = `
+      <div class="role-row-main">
+        <span class="role-name">${sub}</span>
+        <span class="role-count">${count}</span>
+        <span class="role-arrow" aria-hidden="true">↗</span>
+      </div>
+      <span class="role-tagline">${roleTagline(sub)}</span>
+    `;
+    row.addEventListener("click", () => {
+      jobState.subcategory = sub;
+      renderJobTab();
+    });
+    wrap.appendChild(row);
+    observeRoleRow(row);
+  });
+}
+
 // ===== ① 직업 탭 =====
 let jobState = { subcategory: "전체", sort: "latest" };
 
 function renderJobTab() {
+  renderRolesList();
+
   const pillWrap = document.getElementById("job-subcategory-pills");
   pillWrap.innerHTML = "";
   SUBCATEGORIES.forEach(sub => {
@@ -279,9 +349,9 @@ function initMap() {
 
     const marker = L.circleMarker(coord, {
       radius,
-      color: "#a9bcdb",
+      color: "#8E7BFF",
       weight: 1,
-      fillColor: "#7d93c2",
+      fillColor: "#6C4DF6",
       fillOpacity: 0.3,
     })
       .addTo(map)
@@ -302,7 +372,7 @@ function initMap() {
     L.circleMarker(hub.coords, {
       radius: radius + 7,
       stroke: false,
-      fillColor: "#ff7a3d",
+      fillColor: "#4DE3D0",
       fillOpacity: 0.18,
       interactive: false,
     }).addTo(map);
@@ -311,7 +381,7 @@ function initMap() {
       radius,
       color: "#ffffff",
       weight: 2,
-      fillColor: "#ff7a3d",
+      fillColor: "#4DE3D0",
       fillOpacity: 0.95,
     })
       .addTo(map)
