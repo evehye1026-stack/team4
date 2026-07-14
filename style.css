@@ -221,7 +221,6 @@ html, body {
   appearance: none;
   border: none;
   background: none;
-  margin-left: auto;
   font-size: 19px;
   padding: 8px 10px;
   border-radius: 8px;
@@ -231,6 +230,26 @@ html, body {
 }
 
 .global-search-btn:hover { background: var(--bg-soft); }
+
+/* 상단바 우측 (로그인/회원가입 · 계정 · 검색) */
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topbar-auth {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-account-email {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-sub);
+}
 
 /* 전역 검색 드로어 (화면 오른쪽에서 슬라이드 인) */
 .search-drawer-backdrop {
@@ -405,6 +424,7 @@ html, body {
 }
 
 .job-card .logo {
+  position: relative;
   font-size: 26px;
   width: 44px;
   height: 44px;
@@ -414,6 +434,15 @@ html, body {
   background: var(--bg-soft);
   border-radius: 10px;
   margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.job-card .logo .logo-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .job-card .name {
@@ -555,6 +584,10 @@ html, body {
   font-size: 14px;
 }
 
+.empty-state .pill {
+  margin-top: 14px;
+}
+
 /* 지도 */
 #map {
   width: 100%;
@@ -655,6 +688,98 @@ html, body {
   color: var(--blue);
 }
 
+/* 이력서 탭: 로그인 게이트 */
+.auth-gate {
+  max-width: 360px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-soft);
+  margin-bottom: 24px;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.auth-message {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin: 0;
+}
+
+/* 이력서 탭: 프로필 편집 */
+.resume-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.resume-edit-fields .search-input {
+  margin-bottom: 0;
+}
+
+.resume-links-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.resume-links-row .search-input {
+  flex: 1;
+  min-width: 140px;
+  margin-bottom: 0;
+}
+
+/* 프로젝트 / 지원 내역 추가 폼 */
+.project-form,
+.application-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.project-form .search-input,
+.application-form .search-input {
+  width: auto;
+  flex: 1;
+  min-width: 160px;
+  margin-bottom: 0;
+}
+
+.project-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--blue);
+}
+
+.app-delete-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg-soft);
+  color: var(--text-sub);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.app-delete-btn:hover {
+  background: #fdecec;
+  color: #c0392b;
+}
+
 /* 지원 현황 상태 태그 */
 .status-tag {
   font-size: 11px;
@@ -737,4 +862,78 @@ html, body {
   font-size: 12px;
   color: var(--text-sub);
   flex: none;
+}
+
+/* 경력 연차 입력칸은 좁게 */
+#resume-career-years-input {
+  flex: none;
+  width: 140px;
+}
+
+/* ===== 이력서 인쇄 전용 뷰 ===== */
+.resume-print-view { display: none; }
+
+@media print {
+  body * { visibility: hidden; }
+  .resume-print-view, .resume-print-view * { visibility: visible; }
+  .resume-print-view {
+    display: block;
+    position: absolute;
+    inset: 0;
+    padding: 48px;
+    font-family: -apple-system, "Malgun Gothic", sans-serif;
+    color: #111;
+  }
+
+  .resume-print-view h1 {
+    font-size: 26px;
+    margin: 0 0 4px;
+  }
+
+  .resume-print-view > p {
+    margin: 0 0 4px;
+    color: #444;
+    font-size: 13px;
+  }
+
+  .resume-print-view section {
+    margin-top: 22px;
+    break-inside: avoid;
+  }
+
+  .resume-print-view h2 {
+    font-size: 15px;
+    border-bottom: 2px solid #111;
+    padding-bottom: 4px;
+    margin: 0 0 10px;
+  }
+
+  .print-entry {
+    margin-bottom: 10px;
+    break-inside: avoid;
+  }
+
+  .print-entry-head {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  .print-entry-sub {
+    font-size: 12px;
+    color: #444;
+    margin: 2px 0;
+  }
+
+  .print-entry-desc {
+    font-size: 12px;
+    color: #222;
+    white-space: pre-wrap;
+  }
+
+  .print-tags {
+    font-size: 12px;
+    color: #444;
+  }
 }

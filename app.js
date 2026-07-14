@@ -1,3 +1,6 @@
+// Supabase 클라이언트는 앱 전체에서 하나만 공유 (채용공고 조회 + 이력서 탭 로그인/CRUD)
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // ===== GNB 전환 (채용 / 이력서 / 고용 이벤트 / 커뮤니티) =====
 const gnbButtons = document.querySelectorAll(".gnb-btn");
 const gnbPanels = document.querySelectorAll(".gnb-panel");
@@ -63,7 +66,31 @@ document.getElementById("search-drawer-close").addEventListener("click", closeSe
 searchDrawerBackdrop.addEventListener("click", closeSearchDrawer);
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && searchDrawer.classList.contains("open")) closeSearchDrawer();
+  if (e.key === "Escape" && authDrawer.classList.contains("open")) closeAuthDrawer();
 });
+
+// ===== 로그인/회원가입 드로어 (상단바 우측) =====
+const authDrawer = document.getElementById("auth-drawer");
+const authDrawerBackdrop = document.getElementById("auth-drawer-backdrop");
+
+function openAuthDrawer() {
+  authDrawer.classList.add("open");
+  authDrawerBackdrop.classList.add("open");
+  authDrawer.setAttribute("aria-hidden", "false");
+  document.getElementById("auth-email").focus();
+}
+
+function closeAuthDrawer() {
+  authDrawer.classList.remove("open");
+  authDrawerBackdrop.classList.remove("open");
+  authDrawer.setAttribute("aria-hidden", "true");
+}
+
+document.getElementById("topbar-login-btn").addEventListener("click", openAuthDrawer);
+document.getElementById("topbar-signup-btn").addEventListener("click", openAuthDrawer);
+document.getElementById("auth-drawer-close").addEventListener("click", closeAuthDrawer);
+authDrawerBackdrop.addEventListener("click", closeAuthDrawer);
+document.getElementById("topbar-logout-btn").addEventListener("click", () => supabaseClient.auth.signOut());
 
 // ===== 공통: 카드 렌더 =====
 function renderJobCard(job) {
@@ -74,27 +101,28 @@ function renderJobCard(job) {
   div.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); window.open(job.url, "_blank"); }
   });
+  const reward = formatReward(job);
   div.innerHTML = `
-    <div class="logo">${job.logo}</div>
+    <div class="logo">
+      <span>${job.company ? job.company.charAt(0) : "🏢"}</span>
+      ${job.logoUrl ? `<img class="logo-img" src="${job.logoUrl}" alt="" loading="lazy" onerror="this.remove()">` : ""}
+    </div>
     <p class="name">${job.name}</p>
     <p class="company">${job.company}</p>
-    <p class="intro">${job.intro}</p>
-    <div class="address">📍 ${job.city} ${job.district}</div>
+    <div class="address">📍 ${job.city}${job.district ? " " + job.district : ""}</div>
     <div class="meta-row">
-      <span class="salary">${formatSalary(job)}</span>
-      <span class="applicants">${formatApplicants(job)}</span>
+      <span class="salary">${formatDueDate(job)}</span>
+      ${reward ? `<span class="applicants">${reward}</span>` : ""}
     </div>
     <div class="tags">
       <span class="tag">${job.subcategory}</span>
-      <span class="tag">${job.years}</span>
+      <span class="tag">${employmentTypeLabel(job.employmentType)}</span>
     </div>
     <div class="job-card-overlay">
-      <div class="overlay-detail"><span class="label">경력</span><span class="value">${job.years}</span></div>
-      <div class="overlay-detail"><span class="label">학력</span><span class="value">${job.education}</span></div>
-      <div class="overlay-detail"><span class="label">급여</span><span class="value">${formatSalary(job)}</span></div>
-      <div class="overlay-detail"><span class="label">직급</span><span class="value">${job.position}</span></div>
-      <div class="overlay-detail"><span class="label">근무일수</span><span class="value">${job.workDays}</span></div>
+      <div class="overlay-detail"><span class="label">고용형태</span><span class="value">${employmentTypeLabel(job.employmentType)}</span></div>
+      <div class="overlay-detail"><span class="label">마감일</span><span class="value">${formatDueDate(job)}</span></div>
       <div class="overlay-detail"><span class="label">근무지역</span><span class="value">${job.city} ${job.district}</span></div>
+      <div class="overlay-detail"><span class="label">직무 태그</span><span class="value">${job.categoryChildren.join(", ")}</span></div>
     </div>
   `;
   return div;
@@ -119,7 +147,7 @@ function fillSelect(id, options, valueKey, labelKey) {
 }
 
 // ===== ① 직업 탭 =====
-let jobState = { subcategory: "전체", sort: "popularity" };
+let jobState = { subcategory: "전체", sort: "latest" };
 
 function renderJobTab() {
   const pillWrap = document.getElementById("job-subcategory-pills");
@@ -183,14 +211,12 @@ function renderJobSections(wrap) {
 }
 
 // ===== ② 써치 탭 =====
-let searchState = { keyword: "", years: "전체", city: "전체", sort: "popularity" };
+let searchState = { keyword: "", city: "전체", sort: "latest" };
 
 function renderSearchTab() {
-  fillSelect("f-years", YEARS_OPTIONS);
   fillSelect("f-city", CITY_OPTIONS);
   fillSelect("search-sort", SORT_OPTIONS, "value", "label");
 
-  document.getElementById("f-years").value = searchState.years;
   document.getElementById("f-city").value = searchState.city;
   document.getElementById("search-sort").value = searchState.sort;
 
@@ -198,7 +224,6 @@ function renderSearchTab() {
     searchState.keyword = e.target.value.trim().toLowerCase();
     applySearchFilter();
   };
-  document.getElementById("f-years").onchange = (e) => { searchState.years = e.target.value; applySearchFilter(); };
   document.getElementById("f-city").onchange = (e) => { searchState.city = e.target.value; applySearchFilter(); };
   document.getElementById("search-sort").onchange = (e) => { searchState.sort = e.target.value; applySearchFilter(); };
 
@@ -207,10 +232,9 @@ function renderSearchTab() {
 
 function applySearchFilter() {
   let list = POSTINGS.filter(job => {
-    if (searchState.years !== "전체" && job.years !== searchState.years) return false;
     if (searchState.city !== "전체" && job.city !== searchState.city) return false;
     if (searchState.keyword) {
-      const haystack = [job.name, job.company, ...job.skills].join(" ").toLowerCase();
+      const haystack = [job.name, job.company, ...job.categoryChildren].join(" ").toLowerCase();
       if (!haystack.includes(searchState.keyword)) return false;
     }
     return true;
@@ -223,7 +247,7 @@ function applySearchFilter() {
 
 // ===== ③ 지역별 탭 (지도) =====
 let map, mapInitialized = false;
-let regionState = { city: null, district: null, sort: "popularity" };
+let regionState = { city: null, district: null, sort: "latest" };
 
 function countByCity(list) {
   const map = {};
@@ -332,29 +356,435 @@ function renderRegionCards() {
   renderCardList(document.getElementById("region-cards"), list);
 }
 
-// ===== ④ 이력서 탭 =====
-function renderResumeTab() {
-  document.getElementById("resume-name").textContent = RESUME_PROFILE.name;
-  document.getElementById("resume-headline").textContent = RESUME_PROFILE.title;
-  document.getElementById("resume-progress-fill").style.width = `${RESUME_PROFILE.completeness}%`;
-  document.getElementById("resume-progress-label").textContent = `이력서 완성도 ${RESUME_PROFILE.completeness}%`;
+// ===== ④ 이력서 탭 (Supabase Auth 로그인 + 이력서/지원내역 CRUD) =====
+// 원티드 API에는 개인 지원 내역이 없어 사용자가 직접 기록하는 트래커로 대체했다.
+let currentUser = null;
 
-  document.getElementById("application-count").innerHTML = `지원 내역 <b>${APPLICATIONS.length}건</b>`;
+function authMessage(text, isError) {
+  const el = document.getElementById("auth-message");
+  el.textContent = text;
+  el.style.color = isError ? "#e5484d" : "";
+}
 
-  const wrap = document.getElementById("application-cards");
+let latestEducation = [];
+let latestExperience = [];
+let latestProjects = [];
+
+function computeCompleteness(resume) {
+  const fields = [
+    resume?.name,
+    resume?.headline,
+    resume?.bio,
+    resume?.phone,
+    resume?.career_type,
+    resume?.skills?.length ? "y" : "",
+    resume?.github_url || resume?.notion_url || resume?.portfolio_url,
+    latestEducation.length ? "y" : "",
+  ];
+  const filled = fields.filter(v => v && String(v).trim()).length;
+  return Math.round((filled / fields.length) * 100);
+}
+
+async function renderAuthTab() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  currentUser = session?.user ?? null;
+
+  const guestArea = document.getElementById("topbar-auth-guest");
+  const userArea = document.getElementById("topbar-auth-user");
+
+  if (currentUser) {
+    guestArea.style.display = "none";
+    userArea.style.display = "flex";
+    document.getElementById("topbar-account-email").textContent = currentUser.email;
+    closeAuthDrawer();
+  } else {
+    guestArea.style.display = "flex";
+    userArea.style.display = "none";
+  }
+}
+
+async function renderResumeTab() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  currentUser = session?.user ?? null;
+
+  const locked = document.getElementById("resume-locked");
+  const content = document.getElementById("resume-content");
+
+  if (!currentUser) {
+    locked.style.display = "block";
+    content.style.display = "none";
+    return;
+  }
+
+  locked.style.display = "none";
+  content.style.display = "block";
+
+  const { data: resume } = await supabaseClient
+    .from("resumes")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  document.getElementById("resume-name-input").value = resume?.name || "";
+  document.getElementById("resume-headline-input").value = resume?.headline || "";
+  document.getElementById("resume-phone-input").value = resume?.phone || "";
+  document.getElementById("resume-career-type-input").value = resume?.career_type || "";
+  document.getElementById("resume-career-years-input").value = resume?.career_years ?? "";
+  document.getElementById("resume-bio-input").value = resume?.bio || "";
+  document.getElementById("resume-skills-input").value = (resume?.skills || []).join(", ");
+  document.getElementById("resume-github-input").value = resume?.github_url || "";
+  document.getElementById("resume-notion-input").value = resume?.notion_url || "";
+  document.getElementById("resume-portfolio-input").value = resume?.portfolio_url || "";
+
+  await renderEducation();
+  await renderExperience();
+  await renderProjects();
+  await renderApplications();
+
+  const completeness = computeCompleteness(resume);
+  document.getElementById("resume-progress-fill").style.width = `${completeness}%`;
+  document.getElementById("resume-progress-label").textContent = `이력서 완성도 ${completeness}%`;
+
+  renderPrintView(resume);
+}
+
+async function renderEducation() {
+  const { data, error } = await supabaseClient
+    .from("resume_education")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) { console.error(error); return; }
+  latestEducation = data;
+
+  document.getElementById("education-count").innerHTML = `학력 <b>${data.length}건</b>`;
+
+  const wrap = document.getElementById("education-cards");
   wrap.innerHTML = "";
-  APPLICATIONS.forEach(app => {
+  if (data.length === 0) {
+    wrap.innerHTML = `<div class="empty-state">아직 등록한 학력이 없습니다.</div>`;
+    return;
+  }
+
+  data.forEach(edu => {
     const div = document.createElement("div");
     div.className = "job-card";
     div.innerHTML = `
-      <p class="name">${app.jobTitle}</p>
+      <p class="name">${edu.school}</p>
+      <p class="company">${[edu.major, edu.degree].filter(Boolean).join(" · ")}</p>
+      <div class="meta-row">
+        ${edu.status ? `<span class="status-tag status-pending">${edu.status}</span>` : ""}
+        ${edu.period ? `<span class="applicants">${edu.period}</span>` : ""}
+      </div>
+      <button type="button" class="app-delete-btn" aria-label="삭제">✕</button>
+    `;
+    div.querySelector(".app-delete-btn").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await supabaseClient.from("resume_education").delete().eq("id", edu.id);
+      await renderEducation();
+      renderPrintView();
+    });
+    wrap.appendChild(div);
+  });
+}
+
+async function renderExperience() {
+  const { data, error } = await supabaseClient
+    .from("resume_experience")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) { console.error(error); return; }
+  latestExperience = data;
+
+  document.getElementById("experience-count").innerHTML = `경력 <b>${data.length}건</b>`;
+
+  const wrap = document.getElementById("experience-cards");
+  wrap.innerHTML = "";
+  if (data.length === 0) {
+    wrap.innerHTML = `<div class="empty-state">아직 등록한 경력이 없습니다.</div>`;
+    return;
+  }
+
+  data.forEach(exp => {
+    const div = document.createElement("div");
+    div.className = "job-card";
+    div.innerHTML = `
+      <p class="name">${exp.company}</p>
+      <p class="company">${[exp.position, exp.period].filter(Boolean).join(" · ")}</p>
+      ${exp.description ? `<p class="intro">${exp.description}</p>` : ""}
+      <button type="button" class="app-delete-btn" aria-label="삭제">✕</button>
+    `;
+    div.querySelector(".app-delete-btn").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await supabaseClient.from("resume_experience").delete().eq("id", exp.id);
+      await renderExperience();
+      renderPrintView();
+    });
+    wrap.appendChild(div);
+  });
+}
+
+function renderPrintView(resume) {
+  document.getElementById("print-name").textContent = document.getElementById("resume-name-input").value || "이름 미입력";
+  document.getElementById("print-headline").textContent = document.getElementById("resume-headline-input").value;
+
+  const phone = document.getElementById("resume-phone-input").value;
+  const contactParts = [currentUser?.email, phone].filter(Boolean);
+  document.getElementById("print-contact").textContent = contactParts.join(" · ");
+
+  document.getElementById("print-bio").textContent = document.getElementById("resume-bio-input").value;
+  document.getElementById("print-skills").textContent = document.getElementById("resume-skills-input").value;
+
+  const careerType = document.getElementById("resume-career-type-input").value;
+  const careerYears = document.getElementById("resume-career-years-input").value;
+  document.getElementById("print-career-summary").textContent = careerType
+    ? `${careerType}${careerType === "경력" && careerYears ? ` · ${careerYears}년차` : ""}`
+    : "";
+
+  document.getElementById("print-education").innerHTML = latestEducation.map(edu => `
+    <div class="print-entry">
+      <div class="print-entry-head"><span>${edu.school}</span><span>${edu.period || ""}</span></div>
+      <div class="print-entry-sub">${[edu.major, edu.degree, edu.status].filter(Boolean).join(" · ")}</div>
+    </div>
+  `).join("") || "<p class=\"print-entry-sub\">등록된 학력이 없습니다.</p>";
+
+  document.getElementById("print-experience").innerHTML = latestExperience.map(exp => `
+    <div class="print-entry">
+      <div class="print-entry-head"><span>${exp.company}</span><span>${exp.period || ""}</span></div>
+      <div class="print-entry-sub">${exp.position || ""}</div>
+      ${exp.description ? `<div class="print-entry-desc">${exp.description}</div>` : ""}
+    </div>
+  `).join("") || "";
+
+  document.getElementById("print-projects").innerHTML = latestProjects.map(proj => `
+    <div class="print-entry">
+      <div class="print-entry-head"><span>${proj.title}</span><span>${proj.period || ""}</span></div>
+      ${proj.description ? `<div class="print-entry-desc">${proj.description}</div>` : ""}
+      ${(proj.tech_stack || []).length ? `<div class="print-tags">${proj.tech_stack.join(", ")}</div>` : ""}
+    </div>
+  `).join("") || "<p class=\"print-entry-sub\">등록된 프로젝트가 없습니다.</p>";
+}
+
+async function renderProjects() {
+  const { data: projects, error } = await supabaseClient
+    .from("resume_projects")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) { console.error(error); return; }
+  latestProjects = projects;
+
+  document.getElementById("project-count").innerHTML = `프로젝트 <b>${projects.length}건</b>`;
+
+  const wrap = document.getElementById("project-cards");
+  wrap.innerHTML = "";
+  if (projects.length === 0) {
+    wrap.innerHTML = `<div class="empty-state">아직 등록한 프로젝트가 없습니다.</div>`;
+    return;
+  }
+
+  projects.forEach(proj => {
+    const div = document.createElement("div");
+    div.className = "job-card";
+    div.innerHTML = `
+      <p class="name">${proj.title}</p>
+      ${proj.period ? `<p class="company">${proj.period}</p>` : ""}
+      ${proj.description ? `<p class="intro">${proj.description}</p>` : ""}
+      <div class="tags">
+        ${(proj.tech_stack || []).map(t => `<span class="tag">${t}</span>`).join("")}
+      </div>
+      ${proj.project_url ? `<a class="project-link" href="${proj.project_url}" target="_blank" rel="noopener">링크 보기 ↗</a>` : ""}
+      <button type="button" class="app-delete-btn" aria-label="삭제">✕</button>
+    `;
+    div.querySelector(".app-delete-btn").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await supabaseClient.from("resume_projects").delete().eq("id", proj.id);
+      await renderProjects();
+      renderPrintView();
+    });
+    wrap.appendChild(div);
+  });
+}
+
+async function renderApplications() {
+  const { data: applications, error } = await supabaseClient
+    .from("applications")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) { console.error(error); return; }
+
+  document.getElementById("application-count").innerHTML = `지원 내역 <b>${applications.length}건</b>`;
+
+  const wrap = document.getElementById("application-cards");
+  wrap.innerHTML = "";
+  if (applications.length === 0) {
+    wrap.innerHTML = `<div class="empty-state">아직 기록한 지원 내역이 없습니다.</div>`;
+    return;
+  }
+
+  applications.forEach(app => {
+    const daysAgo = Math.floor((Date.now() - new Date(app.applied_date)) / 86400000);
+    const div = document.createElement("div");
+    div.className = "job-card";
+    div.innerHTML = `
+      <p class="name">${app.job_title}</p>
       <p class="company">${app.company}</p>
       <div class="meta-row">
         <span class="status-tag status-${statusClass(app.status)}">${app.status}</span>
-        <span class="applicants">${app.appliedDaysAgo === 0 ? "오늘 지원" : `${app.appliedDaysAgo}일 전 지원`}</span>
+        <span class="applicants">${daysAgo <= 0 ? "오늘 지원" : `${daysAgo}일 전 지원`}</span>
       </div>
+      <button type="button" class="app-delete-btn" aria-label="삭제">✕</button>
     `;
+    div.querySelector(".app-delete-btn").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await supabaseClient.from("applications").delete().eq("id", app.id);
+      renderApplications();
+    });
     wrap.appendChild(div);
+  });
+}
+
+function initResumeTab() {
+  fillSelect("app-status-input", APPLICATION_STATUS_OPTIONS);
+
+  document.getElementById("resume-goto-login-btn").addEventListener("click", openAuthDrawer);
+
+  document.getElementById("auth-signup-btn").addEventListener("click", async () => {
+    const email = document.getElementById("auth-email").value.trim();
+    const password = document.getElementById("auth-password").value;
+    if (!email || password.length < 6) {
+      authMessage("이메일과 6자 이상 비밀번호를 입력하세요.", true);
+      return;
+    }
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    if (error) { authMessage(error.message, true); return; }
+    authMessage(data.session ? "가입 완료!" : "가입 확인 이메일을 보냈습니다. 확인 후 로그인해주세요.");
+  });
+
+  document.getElementById("auth-login-btn").addEventListener("click", async () => {
+    const email = document.getElementById("auth-email").value.trim();
+    const password = document.getElementById("auth-password").value;
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) authMessage(error.message, true);
+  });
+
+  document.getElementById("resume-save-btn").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const name = document.getElementById("resume-name-input").value.trim();
+    const headline = document.getElementById("resume-headline-input").value.trim();
+    const phone = document.getElementById("resume-phone-input").value.trim();
+    const career_type = document.getElementById("resume-career-type-input").value || null;
+    const careerYearsRaw = document.getElementById("resume-career-years-input").value;
+    const career_years = careerYearsRaw ? Number(careerYearsRaw) : null;
+    const bio = document.getElementById("resume-bio-input").value.trim();
+    const skills = document.getElementById("resume-skills-input").value
+      .split(",").map(s => s.trim()).filter(Boolean);
+    const github_url = document.getElementById("resume-github-input").value.trim();
+    const notion_url = document.getElementById("resume-notion-input").value.trim();
+    const portfolio_url = document.getElementById("resume-portfolio-input").value.trim();
+    const { error } = await supabaseClient
+      .from("resumes")
+      .upsert({
+        user_id: currentUser.id, name, headline, phone, career_type, career_years, bio, skills,
+        github_url, notion_url, portfolio_url,
+        updated_at: new Date().toISOString(),
+      });
+    if (error) { alert("저장 실패: " + error.message); return; }
+    renderResumeTab();
+  });
+
+  document.getElementById("edu-add-btn").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const school = document.getElementById("edu-school-input").value.trim();
+    const major = document.getElementById("edu-major-input").value.trim();
+    const degree = document.getElementById("edu-degree-input").value;
+    const status = document.getElementById("edu-status-input").value;
+    const period = document.getElementById("edu-period-input").value.trim();
+    if (!school) return;
+    const { error } = await supabaseClient.from("resume_education").insert({
+      user_id: currentUser.id, school, major, degree, status, period,
+    });
+    if (error) { alert("추가 실패: " + error.message); return; }
+    document.getElementById("edu-school-input").value = "";
+    document.getElementById("edu-major-input").value = "";
+    document.getElementById("edu-degree-input").value = "";
+    document.getElementById("edu-status-input").value = "";
+    document.getElementById("edu-period-input").value = "";
+    await renderEducation();
+    renderPrintView();
+  });
+
+  document.getElementById("exp-add-btn").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const company = document.getElementById("exp-company-input").value.trim();
+    const position = document.getElementById("exp-position-input").value.trim();
+    const period = document.getElementById("exp-period-input").value.trim();
+    const description = document.getElementById("exp-desc-input").value.trim();
+    if (!company) return;
+    const { error } = await supabaseClient.from("resume_experience").insert({
+      user_id: currentUser.id, company, position, period, description,
+    });
+    if (error) { alert("추가 실패: " + error.message); return; }
+    document.getElementById("exp-company-input").value = "";
+    document.getElementById("exp-position-input").value = "";
+    document.getElementById("exp-period-input").value = "";
+    document.getElementById("exp-desc-input").value = "";
+    await renderExperience();
+    renderPrintView();
+  });
+
+  document.getElementById("resume-print-btn").addEventListener("click", () => window.print());
+
+  document.getElementById("proj-add-btn").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const title = document.getElementById("proj-title-input").value.trim();
+    const period = document.getElementById("proj-period-input").value.trim();
+    const techStack = document.getElementById("proj-tech-input").value
+      .split(",").map(s => s.trim()).filter(Boolean);
+    const projectUrl = document.getElementById("proj-url-input").value.trim();
+    const description = document.getElementById("proj-desc-input").value.trim();
+    if (!title) return;
+    const { error } = await supabaseClient.from("resume_projects").insert({
+      user_id: currentUser.id,
+      title,
+      period,
+      tech_stack: techStack,
+      project_url: projectUrl || null,
+      description,
+    });
+    if (error) { alert("추가 실패: " + error.message); return; }
+    document.getElementById("proj-title-input").value = "";
+    document.getElementById("proj-period-input").value = "";
+    document.getElementById("proj-tech-input").value = "";
+    document.getElementById("proj-url-input").value = "";
+    document.getElementById("proj-desc-input").value = "";
+    renderProjects();
+  });
+
+  document.getElementById("app-add-btn").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const company = document.getElementById("app-company-input").value.trim();
+    const jobTitle = document.getElementById("app-title-input").value.trim();
+    const status = document.getElementById("app-status-input").value;
+    if (!company || !jobTitle) return;
+    const { error } = await supabaseClient
+      .from("applications")
+      .insert({ user_id: currentUser.id, company, job_title: jobTitle, status });
+    if (error) { alert("추가 실패: " + error.message); return; }
+    document.getElementById("app-company-input").value = "";
+    document.getElementById("app-title-input").value = "";
+    renderApplications();
+  });
+
+  supabaseClient.auth.onAuthStateChange(() => {
+    renderAuthTab();
+    renderResumeTab();
   });
 }
 
@@ -428,73 +858,54 @@ function renderCommunityTab() {
   });
 }
 
-// ===== CSV 로더 (jobs.csv → POSTINGS) =====
-// 쉼표/줄바꿈이 포함된 필드는 큰따옴표(" ")로 감싸고, 기술스택처럼 여러 값이 들어가는 필드는 "|"로 구분한다.
-function parseCSV(text) {
-  const rows = [];
-  let row = [], field = "", inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else { inQuotes = false; }
-      } else {
-        field += c;
-      }
-    } else if (c === '"') {
-      inQuotes = true;
-    } else if (c === ",") {
-      row.push(field); field = "";
-    } else if (c === "\n") {
-      row.push(field); rows.push(row); row = []; field = "";
-    } else if (c === "\r") {
-      // skip
-    } else {
-      field += c;
-    }
+// ===== Supabase 로더 (jobs 테이블 → POSTINGS) =====
+// 원티드 full_location은 구조화되어 있지 않아, "OO시/도 다음 토큰"을 구/군(시)으로 best-effort 추출한다.
+// 예) "서울특별시 서초구 ..." → "서초구", "경기도 성남시 분당구 ..." → "성남시 분당구"
+function parseDistrict(fullLocation) {
+  if (!fullLocation) return "";
+  const tokens = fullLocation.trim().split(/\s+/);
+  if (tokens.length < 2) return "";
+  if (/시$/.test(tokens[1]) && tokens[2] && /[구군]$/.test(tokens[2])) {
+    return `${tokens[1]} ${tokens[2]}`;
   }
-  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
-  return rows.filter(r => r.length > 1 || r[0] !== "");
+  if (/[구군시]$/.test(tokens[1])) return tokens[1];
+  return "";
 }
 
-function csvToJobs(text) {
-  const rows = parseCSV(text.trim());
-  const header = rows[0];
-  return rows.slice(1).map(cols => {
-    const raw = {};
-    header.forEach((key, idx) => { raw[key.trim()] = cols[idx] ?? ""; });
-    return {
-      id: Number(raw.id),
-      name: raw.name,
-      company: raw.company,
-      logo: raw.logo,
-      intro: raw.intro,
-      city: raw.city,
-      district: raw.district,
-      subcategory: raw.subcategory,
-      skills: raw.skills ? raw.skills.split("|").map(s => s.trim()).filter(Boolean) : [],
-      years: raw.years,
-      education: raw.education,
-      position: raw.position,
-      workDays: raw.workDays,
-      salaryMin: Number(raw.salaryMin),
-      salaryMax: Number(raw.salaryMax),
-      applicants: Number(raw.applicants),
-      postedDaysAgo: Number(raw.postedDaysAgo),
-      popularity: Number(raw.popularity),
-      recommendScore: Number(raw.recommendScore),
-      url: raw.url,
-    };
-  });
+function mapSupabaseRow(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    company: row.company_name,
+    logoUrl: row.logo_url,
+    city: row.location || "기타",
+    district: parseDistrict(row.full_location),
+    subcategory: (row.category_children && row.category_children[0]) || "기타",
+    categoryChildren: row.category_children || [],
+    employmentType: row.employment_type,
+    dueTime: row.due_time,
+    rewardTotal: row.reward_total,
+    url: row.url,
+  };
 }
 
 async function loadJobs() {
-  const res = await fetch("jobs.csv");
-  if (!res.ok) throw new Error(`jobs.csv 응답 오류 (HTTP ${res.status})`);
-  const text = await res.text();
-  return csvToJobs(text);
+  const rows = [];
+  const pageSize = 1000;
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabaseClient
+      .from("jobs")
+      .select("*")
+      .eq("status", "active")
+      .range(from, from + pageSize - 1);
+    if (error) throw new Error(error.message);
+    if (!data.length) break;
+    rows.push(...data);
+    if (data.length < pageSize) break;
+  }
+
+  return rows.map(mapSupabaseRow);
 }
 
 // ===== 초기 렌더 =====
@@ -504,10 +915,7 @@ async function init() {
   } catch (err) {
     const message = `
       <div class="empty-state">
-        jobs.csv를 불러오지 못했습니다.<br>
-        file:// 로 직접 열면 브라우저가 로컬 CSV 요청을 막을 수 있습니다.<br>
-        프로젝트 폴더에서 간단한 로컬 서버(예: <code>npx serve</code> 또는 <code>python -m http.server</code>)로 실행한 뒤 다시 열어주세요.<br>
-        (${err.message})
+        채용 공고를 불러오지 못했습니다. (${err.message})
       </div>`;
     document.getElementById("job-cards").innerHTML = message;
     console.error(err);
@@ -516,11 +924,10 @@ async function init() {
 
   SUBCATEGORIES = ["전체", ...new Set(POSTINGS.map(j => j.subcategory))];
   CITY_OPTIONS = ["전체", ...new Set(POSTINGS.map(j => j.city))];
-  ALL_SKILLS = [...new Set(POSTINGS.flatMap(j => j.skills))].sort();
 
   renderJobTab();
   renderSearchTab();
-  renderResumeTab();
+  initResumeTab();
   renderEventTab();
   renderCommunityTab();
 }
