@@ -1,3 +1,6 @@
+// Supabase 클라이언트는 앱 전체에서 하나만 공유 (채용공고 조회 + 이력서 탭 로그인/CRUD)
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // ===== GNB 전환 (채용 / 이력서 / 고용 이벤트 / 커뮤니티) =====
 const gnbButtons = document.querySelectorAll(".gnb-btn");
 const gnbPanels = document.querySelectorAll(".gnb-panel");
@@ -329,30 +332,148 @@ function renderRegionCards() {
   renderCardList(document.getElementById("region-cards"), list);
 }
 
-// ===== ④ 이력서 탭 =====
-function renderResumeTab() {
-  document.getElementById("resume-name").textContent = RESUME_PROFILE.name;
-  document.getElementById("resume-headline").textContent = RESUME_PROFILE.title;
-  document.getElementById("resume-progress-fill").style.width = `${RESUME_PROFILE.completeness}%`;
-  document.getElementById("resume-progress-label").textContent = `이력서 완성도 ${RESUME_PROFILE.completeness}%`;
+// ===== ④ 이력서 탭 (Supabase Auth 로그인 + 이력서/지원내역 CRUD) =====
+// 원티드 API에는 개인 지원 내역이 없어 사용자가 직접 기록하는 트래커로 대체했다.
+let currentUser = null;
 
-  document.getElementById("application-count").innerHTML = `지원 내역 <b>${APPLICATIONS.length}건</b>`;
+function authMessage(text, isError) {
+  const el = document.getElementById("auth-message");
+  el.textContent = text;
+  el.style.color = isError ? "#e5484d" : "";
+}
+
+function computeCompleteness(resume) {
+  const fields = [resume?.name, resume?.headline, resume?.bio];
+  const filled = fields.filter(v => v && v.trim()).length;
+  return Math.round((filled / fields.length) * 100);
+}
+
+async function renderResumeTab() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  currentUser = session?.user ?? null;
+
+  const gate = document.getElementById("resume-auth-gate");
+  const content = document.getElementById("resume-content");
+
+  if (!currentUser) {
+    gate.style.display = "block";
+    content.style.display = "none";
+    return;
+  }
+
+  gate.style.display = "none";
+  content.style.display = "block";
+  document.getElementById("resume-logged-in-as").innerHTML = `<b>${currentUser.email}</b>님으로 로그인됨`;
+
+  const { data: resume } = await supabaseClient
+    .from("resumes")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  document.getElementById("resume-name-input").value = resume?.name || "";
+  document.getElementById("resume-headline-input").value = resume?.headline || "";
+  document.getElementById("resume-bio-input").value = resume?.bio || "";
+
+  const completeness = computeCompleteness(resume);
+  document.getElementById("resume-progress-fill").style.width = `${completeness}%`;
+  document.getElementById("resume-progress-label").textContent = `이력서 완성도 ${completeness}%`;
+
+  await renderApplications();
+}
+
+async function renderApplications() {
+  const { data: applications, error } = await supabaseClient
+    .from("applications")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) { console.error(error); return; }
+
+  document.getElementById("application-count").innerHTML = `지원 내역 <b>${applications.length}건</b>`;
 
   const wrap = document.getElementById("application-cards");
   wrap.innerHTML = "";
-  APPLICATIONS.forEach(app => {
+  if (applications.length === 0) {
+    wrap.innerHTML = `<div class="empty-state">아직 기록한 지원 내역이 없습니다.</div>`;
+    return;
+  }
+
+  applications.forEach(app => {
+    const daysAgo = Math.floor((Date.now() - new Date(app.applied_date)) / 86400000);
     const div = document.createElement("div");
     div.className = "job-card";
     div.innerHTML = `
-      <p class="name">${app.jobTitle}</p>
+      <p class="name">${app.job_title}</p>
       <p class="company">${app.company}</p>
       <div class="meta-row">
         <span class="status-tag status-${statusClass(app.status)}">${app.status}</span>
-        <span class="applicants">${app.appliedDaysAgo === 0 ? "오늘 지원" : `${app.appliedDaysAgo}일 전 지원`}</span>
+        <span class="applicants">${daysAgo <= 0 ? "오늘 지원" : `${daysAgo}일 전 지원`}</span>
       </div>
+      <button type="button" class="app-delete-btn" aria-label="삭제">✕</button>
     `;
+    div.querySelector(".app-delete-btn").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await supabaseClient.from("applications").delete().eq("id", app.id);
+      renderApplications();
+    });
     wrap.appendChild(div);
   });
+}
+
+function initResumeTab() {
+  fillSelect("app-status-input", APPLICATION_STATUS_OPTIONS);
+
+  document.getElementById("auth-signup-btn").addEventListener("click", async () => {
+    const email = document.getElementById("auth-email").value.trim();
+    const password = document.getElementById("auth-password").value;
+    if (!email || password.length < 6) {
+      authMessage("이메일과 6자 이상 비밀번호를 입력하세요.", true);
+      return;
+    }
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    if (error) { authMessage(error.message, true); return; }
+    authMessage(data.session ? "가입 완료!" : "가입 확인 이메일을 보냈습니다. 확인 후 로그인해주세요.");
+  });
+
+  document.getElementById("auth-login-btn").addEventListener("click", async () => {
+    const email = document.getElementById("auth-email").value.trim();
+    const password = document.getElementById("auth-password").value;
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) authMessage(error.message, true);
+  });
+
+  document.getElementById("auth-logout-btn").addEventListener("click", () => supabaseClient.auth.signOut());
+
+  document.getElementById("resume-save-btn").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const name = document.getElementById("resume-name-input").value.trim();
+    const headline = document.getElementById("resume-headline-input").value.trim();
+    const bio = document.getElementById("resume-bio-input").value.trim();
+    const { error } = await supabaseClient
+      .from("resumes")
+      .upsert({ user_id: currentUser.id, name, headline, bio, updated_at: new Date().toISOString() });
+    if (error) { alert("저장 실패: " + error.message); return; }
+    renderResumeTab();
+  });
+
+  document.getElementById("app-add-btn").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const company = document.getElementById("app-company-input").value.trim();
+    const jobTitle = document.getElementById("app-title-input").value.trim();
+    const status = document.getElementById("app-status-input").value;
+    if (!company || !jobTitle) return;
+    const { error } = await supabaseClient
+      .from("applications")
+      .insert({ user_id: currentUser.id, company, job_title: jobTitle, status });
+    if (error) { alert("추가 실패: " + error.message); return; }
+    document.getElementById("app-company-input").value = "";
+    document.getElementById("app-title-input").value = "";
+    renderApplications();
+  });
+
+  supabaseClient.auth.onAuthStateChange(() => renderResumeTab());
 }
 
 // ===== ⑤ 고용 이벤트 탭 =====
@@ -457,12 +578,11 @@ function mapSupabaseRow(row) {
 }
 
 async function loadJobs() {
-  const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const rows = [];
   const pageSize = 1000;
 
   for (let from = 0; ; from += pageSize) {
-    const { data, error } = await client
+    const { data, error } = await supabaseClient
       .from("jobs")
       .select("*")
       .eq("status", "active")
@@ -495,7 +615,7 @@ async function init() {
 
   renderJobTab();
   renderSearchTab();
-  renderResumeTab();
+  initResumeTab();
   renderEventTab();
   renderCommunityTab();
 }

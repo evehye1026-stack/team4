@@ -665,6 +665,76 @@ html, body {
   color: var(--blue);
 }
 
+/* 이력서 탭: 로그인 게이트 */
+.auth-gate {
+  max-width: 360px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-soft);
+  margin-bottom: 24px;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.auth-message {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin: 0;
+}
+
+/* 이력서 탭: 프로필 편집 */
+.resume-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.resume-edit-fields .search-input {
+  margin-bottom: 0;
+}
+
+/* 지원 내역 추가 폼 */
+.application-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.application-form .search-input {
+  width: auto;
+  flex: 1;
+  min-width: 160px;
+  margin-bottom: 0;
+}
+
+.app-delete-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg-soft);
+  color: var(--text-sub);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.app-delete-btn:hover {
+  background: #fdecec;
+  color: #c0392b;
+}
+
 /* 지원 현황 상태 태그 */
 .status-tag {
   font-size: 11px;

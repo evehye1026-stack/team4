@@ -60,25 +60,17 @@ function formatReward(job) {
   return job.rewardTotal ? `추천 보상금 ${job.rewardTotal}` : "";
 }
 
-// ===== 이력서 탭 목업 데이터 =====
-const RESUME_PROFILE = {
-  name: "홍길동",
-  title: "백엔드 개발자 · 3년차",
-  completeness: 82,
-};
-
-const APPLICATIONS = [
-  { id: 1, company: "토스", jobTitle: "백엔드 서버 개발자 (Java/Kotlin)", appliedDaysAgo: 2, status: "서류 검토중" },
-  { id: 2, company: "당근마켓", jobTitle: "프론트엔드 개발자 (React)", appliedDaysAgo: 5, status: "서류 통과" },
-  { id: 3, company: "카카오", jobTitle: "DevOps 엔지니어", appliedDaysAgo: 9, status: "면접 예정" },
-  { id: 4, company: "우아한형제들", jobTitle: "백엔드 서버 개발자 (Node.js)", appliedDaysAgo: 14, status: "불합격" },
-];
+// ===== 이력서 탭: Supabase Auth 로그인 + 사용자가 직접 기록하는 지원 내역 =====
+// 원티드 API로는 개인 지원 현황을 가져올 수 없어(원티드 계정 로그인 API가 아님),
+// 사용자가 직접 추가/관리하는 지원 트래커로 대체한다.
+const APPLICATION_STATUS_OPTIONS = ["지원완료", "서류검토중", "서류통과", "면접예정", "합격", "불합격"];
 
 function statusClass(status) {
-  if (status === "서류 통과") return "pass";
-  if (status === "면접 예정") return "interview";
+  if (status === "서류통과") return "pass";
+  if (status === "면접예정") return "interview";
+  if (status === "합격") return "pass";
   if (status === "불합격") return "fail";
-  return "pending"; // 서류 검토중
+  return "pending"; // 지원완료 / 서류검토중
 }
 
 // ===== 고용 이벤트 탭 목업 데이터 =====
