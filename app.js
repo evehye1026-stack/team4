@@ -74,27 +74,25 @@ function renderJobCard(job) {
   div.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); window.open(job.url, "_blank"); }
   });
+  const reward = formatReward(job);
   div.innerHTML = `
-    <div class="logo">${job.logo}</div>
+    <div class="logo">${job.company ? job.company.charAt(0) : "🏢"}</div>
     <p class="name">${job.name}</p>
     <p class="company">${job.company}</p>
-    <p class="intro">${job.intro}</p>
-    <div class="address">📍 ${job.city} ${job.district}</div>
+    <div class="address">📍 ${job.city}${job.district ? " " + job.district : ""}</div>
     <div class="meta-row">
-      <span class="salary">${formatSalary(job)}</span>
-      <span class="applicants">${formatApplicants(job)}</span>
+      <span class="salary">${formatDueDate(job)}</span>
+      ${reward ? `<span class="applicants">${reward}</span>` : ""}
     </div>
     <div class="tags">
       <span class="tag">${job.subcategory}</span>
-      <span class="tag">${job.years}</span>
+      <span class="tag">${employmentTypeLabel(job.employmentType)}</span>
     </div>
     <div class="job-card-overlay">
-      <div class="overlay-detail"><span class="label">경력</span><span class="value">${job.years}</span></div>
-      <div class="overlay-detail"><span class="label">학력</span><span class="value">${job.education}</span></div>
-      <div class="overlay-detail"><span class="label">급여</span><span class="value">${formatSalary(job)}</span></div>
-      <div class="overlay-detail"><span class="label">직급</span><span class="value">${job.position}</span></div>
-      <div class="overlay-detail"><span class="label">근무일수</span><span class="value">${job.workDays}</span></div>
+      <div class="overlay-detail"><span class="label">고용형태</span><span class="value">${employmentTypeLabel(job.employmentType)}</span></div>
+      <div class="overlay-detail"><span class="label">마감일</span><span class="value">${formatDueDate(job)}</span></div>
       <div class="overlay-detail"><span class="label">근무지역</span><span class="value">${job.city} ${job.district}</span></div>
+      <div class="overlay-detail"><span class="label">직무 태그</span><span class="value">${job.categoryChildren.join(", ")}</span></div>
     </div>
   `;
   return div;
@@ -119,7 +117,7 @@ function fillSelect(id, options, valueKey, labelKey) {
 }
 
 // ===== ① 직업 탭 =====
-let jobState = { subcategory: "전체", sort: "popularity" };
+let jobState = { subcategory: "전체", sort: "latest" };
 
 function renderJobTab() {
   const pillWrap = document.getElementById("job-subcategory-pills");
@@ -183,14 +181,12 @@ function renderJobSections(wrap) {
 }
 
 // ===== ② 써치 탭 =====
-let searchState = { keyword: "", years: "전체", city: "전체", sort: "popularity" };
+let searchState = { keyword: "", city: "전체", sort: "latest" };
 
 function renderSearchTab() {
-  fillSelect("f-years", YEARS_OPTIONS);
   fillSelect("f-city", CITY_OPTIONS);
   fillSelect("search-sort", SORT_OPTIONS, "value", "label");
 
-  document.getElementById("f-years").value = searchState.years;
   document.getElementById("f-city").value = searchState.city;
   document.getElementById("search-sort").value = searchState.sort;
 
@@ -198,7 +194,6 @@ function renderSearchTab() {
     searchState.keyword = e.target.value.trim().toLowerCase();
     applySearchFilter();
   };
-  document.getElementById("f-years").onchange = (e) => { searchState.years = e.target.value; applySearchFilter(); };
   document.getElementById("f-city").onchange = (e) => { searchState.city = e.target.value; applySearchFilter(); };
   document.getElementById("search-sort").onchange = (e) => { searchState.sort = e.target.value; applySearchFilter(); };
 
@@ -207,10 +202,9 @@ function renderSearchTab() {
 
 function applySearchFilter() {
   let list = POSTINGS.filter(job => {
-    if (searchState.years !== "전체" && job.years !== searchState.years) return false;
     if (searchState.city !== "전체" && job.city !== searchState.city) return false;
     if (searchState.keyword) {
-      const haystack = [job.name, job.company, ...job.skills].join(" ").toLowerCase();
+      const haystack = [job.name, job.company, ...job.categoryChildren].join(" ").toLowerCase();
       if (!haystack.includes(searchState.keyword)) return false;
     }
     return true;
@@ -223,7 +217,7 @@ function applySearchFilter() {
 
 // ===== ③ 지역별 탭 (지도) =====
 let map, mapInitialized = false;
-let regionState = { city: null, district: null, sort: "popularity" };
+let regionState = { city: null, district: null, sort: "latest" };
 
 function countByCity(list) {
   const map = {};
@@ -428,73 +422,54 @@ function renderCommunityTab() {
   });
 }
 
-// ===== CSV 로더 (jobs.csv → POSTINGS) =====
-// 쉼표/줄바꿈이 포함된 필드는 큰따옴표(" ")로 감싸고, 기술스택처럼 여러 값이 들어가는 필드는 "|"로 구분한다.
-function parseCSV(text) {
-  const rows = [];
-  let row = [], field = "", inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else { inQuotes = false; }
-      } else {
-        field += c;
-      }
-    } else if (c === '"') {
-      inQuotes = true;
-    } else if (c === ",") {
-      row.push(field); field = "";
-    } else if (c === "\n") {
-      row.push(field); rows.push(row); row = []; field = "";
-    } else if (c === "\r") {
-      // skip
-    } else {
-      field += c;
-    }
+// ===== Supabase 로더 (jobs 테이블 → POSTINGS) =====
+// 원티드 full_location은 구조화되어 있지 않아, "OO시/도 다음 토큰"을 구/군(시)으로 best-effort 추출한다.
+// 예) "서울특별시 서초구 ..." → "서초구", "경기도 성남시 분당구 ..." → "성남시 분당구"
+function parseDistrict(fullLocation) {
+  if (!fullLocation) return "";
+  const tokens = fullLocation.trim().split(/\s+/);
+  if (tokens.length < 2) return "";
+  if (/시$/.test(tokens[1]) && tokens[2] && /[구군]$/.test(tokens[2])) {
+    return `${tokens[1]} ${tokens[2]}`;
   }
-  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
-  return rows.filter(r => r.length > 1 || r[0] !== "");
+  if (/[구군시]$/.test(tokens[1])) return tokens[1];
+  return "";
 }
 
-function csvToJobs(text) {
-  const rows = parseCSV(text.trim());
-  const header = rows[0];
-  return rows.slice(1).map(cols => {
-    const raw = {};
-    header.forEach((key, idx) => { raw[key.trim()] = cols[idx] ?? ""; });
-    return {
-      id: Number(raw.id),
-      name: raw.name,
-      company: raw.company,
-      logo: raw.logo,
-      intro: raw.intro,
-      city: raw.city,
-      district: raw.district,
-      subcategory: raw.subcategory,
-      skills: raw.skills ? raw.skills.split("|").map(s => s.trim()).filter(Boolean) : [],
-      years: raw.years,
-      education: raw.education,
-      position: raw.position,
-      workDays: raw.workDays,
-      salaryMin: Number(raw.salaryMin),
-      salaryMax: Number(raw.salaryMax),
-      applicants: Number(raw.applicants),
-      postedDaysAgo: Number(raw.postedDaysAgo),
-      popularity: Number(raw.popularity),
-      recommendScore: Number(raw.recommendScore),
-      url: raw.url,
-    };
-  });
+function mapSupabaseRow(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    company: row.company_name,
+    city: row.location || "기타",
+    district: parseDistrict(row.full_location),
+    subcategory: (row.category_children && row.category_children[0]) || "기타",
+    categoryChildren: row.category_children || [],
+    employmentType: row.employment_type,
+    dueTime: row.due_time,
+    rewardTotal: row.reward_total,
+    url: row.url,
+  };
 }
 
 async function loadJobs() {
-  const res = await fetch("jobs.csv");
-  if (!res.ok) throw new Error(`jobs.csv 응답 오류 (HTTP ${res.status})`);
-  const text = await res.text();
-  return csvToJobs(text);
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const rows = [];
+  const pageSize = 1000;
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await client
+      .from("jobs")
+      .select("*")
+      .eq("status", "active")
+      .range(from, from + pageSize - 1);
+    if (error) throw new Error(error.message);
+    if (!data.length) break;
+    rows.push(...data);
+    if (data.length < pageSize) break;
+  }
+
+  return rows.map(mapSupabaseRow);
 }
 
 // ===== 초기 렌더 =====
@@ -504,10 +479,7 @@ async function init() {
   } catch (err) {
     const message = `
       <div class="empty-state">
-        jobs.csv를 불러오지 못했습니다.<br>
-        file:// 로 직접 열면 브라우저가 로컬 CSV 요청을 막을 수 있습니다.<br>
-        프로젝트 폴더에서 간단한 로컬 서버(예: <code>npx serve</code> 또는 <code>python -m http.server</code>)로 실행한 뒤 다시 열어주세요.<br>
-        (${err.message})
+        채용 공고를 불러오지 못했습니다. (${err.message})
       </div>`;
     document.getElementById("job-cards").innerHTML = message;
     console.error(err);
@@ -516,7 +488,6 @@ async function init() {
 
   SUBCATEGORIES = ["전체", ...new Set(POSTINGS.map(j => j.subcategory))];
   CITY_OPTIONS = ["전체", ...new Set(POSTINGS.map(j => j.city))];
-  ALL_SKILLS = [...new Set(POSTINGS.flatMap(j => j.skills))].sort();
 
   renderJobTab();
   renderSearchTab();

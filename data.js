@@ -1,39 +1,63 @@
-// 채용 공고 데이터는 jobs.csv에서 읽어온다 (app.js의 loadJobs() 참고).
-// POSTINGS / SUBCATEGORIES / CITY_OPTIONS / ALL_SKILLS는 CSV 로드 후 app.js에서 채워진다.
+// 채용 공고 데이터는 Supabase jobs 테이블에서 실시간으로 읽어온다 (app.js의 loadJobs() 참고).
+// POSTINGS / SUBCATEGORIES / CITY_OPTIONS 는 Supabase 조회 후 app.js에서 채워진다.
+// 원티드 실제 API에는 급여/지원자수/인기점수/학력/직급/근무일수/기술스택 정보가 없어 목업과 달리 다루지 않는다.
 let POSTINGS = [];
 let SUBCATEGORIES = ["전체"];
 let CITY_OPTIONS = ["전체"];
-let ALL_SKILLS = [];
 
+const SUPABASE_URL = "https://blpilnfdxtdfigmqhyaz.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJscGlsbmZkeHRkZmlnbXFoeWF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5OTQwNzgsImV4cCI6MjA5OTU3MDA3OH0.DV1If__V6Sd1YTeY-Rg7Nm54-o13LItM8JB9NONNopw";
+
+// 원티드 location 필드에 나오는 시/도 단위 좌표 (지역별 탭의 지도 마커용)
 const CITY_COORDS = {
   "서울": [37.5665, 126.9780],
-  "경기": [37.4138, 127.5183],
-  "인천": [37.4563, 126.7052],
   "부산": [35.1796, 129.0756],
   "대구": [35.8714, 128.6014],
+  "인천": [37.4563, 126.7052],
+  "광주": [35.1595, 126.8526],
+  "대전": [36.3504, 127.3845],
+  "울산": [35.5384, 129.3114],
+  "세종": [36.4801, 127.2890],
+  "경기": [37.4138, 127.5183],
+  "강원": [37.8228, 128.1555],
+  "충북": [36.6357, 127.4917],
+  "충남": [36.5184, 126.8000],
+  "전북": [35.7175, 127.1530],
+  "전남": [34.8679, 126.9910],
+  "경북": [36.4919, 128.8889],
+  "경남": [35.4606, 128.2132],
+  "제주": [33.4996, 126.5312],
 };
 
-const YEARS_OPTIONS = ["전체", "신입", "1~3년", "3~5년", "5년이상"];
+const EMPLOYMENT_TYPE_LABELS = { regular: "정규직", contract: "계약직", intern: "인턴" };
+function employmentTypeLabel(type) {
+  return EMPLOYMENT_TYPE_LABELS[type] || type || "-";
+}
 
 const SORT_OPTIONS = [
   { value: "latest", label: "최신순" },
-  { value: "recommend", label: "추천순" },
-  { value: "popularity", label: "인기순" },
+  { value: "deadline", label: "마감임박순" },
 ];
 
 function sortJobs(list, sortKey) {
   const copy = [...list];
-  if (sortKey === "latest") return copy.sort((a, b) => a.postedDaysAgo - b.postedDaysAgo);
-  if (sortKey === "recommend") return copy.sort((a, b) => b.recommendScore - a.recommendScore);
-  return copy.sort((a, b) => b.popularity - a.popularity); // popularity(기본)
+  if (sortKey === "deadline") {
+    return copy.sort((a, b) => {
+      if (!a.dueTime && !b.dueTime) return 0;
+      if (!a.dueTime) return 1; // 상시채용(마감일 없음)은 뒤로
+      if (!b.dueTime) return -1;
+      return new Date(a.dueTime) - new Date(b.dueTime);
+    });
+  }
+  return copy.sort((a, b) => b.id - a.id); // latest: 원티드 포지션ID가 클수록 최근 등록
 }
 
-function formatSalary(job) {
-  return `연봉 ${job.salaryMin.toLocaleString()}~${job.salaryMax.toLocaleString()}만원`;
+function formatDueDate(job) {
+  return job.dueTime ? `~${job.dueTime} 마감` : "상시채용";
 }
 
-function formatApplicants(job) {
-  return `지원 ${job.applicants}명`;
+function formatReward(job) {
+  return job.rewardTotal ? `추천 보상금 ${job.rewardTotal}` : "";
 }
 
 // ===== 이력서 탭 목업 데이터 =====
