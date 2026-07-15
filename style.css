@@ -875,6 +875,11 @@ html, body {
 .result-count b {
   font-family: var(--font-mono);
   color: var(--accent);
+  white-space: nowrap;
+}
+
+.count-nowrap {
+  white-space: nowrap;
 }
 
 .empty-state {
@@ -1206,6 +1211,9 @@ html, body {
 
   .filter-bar { flex-direction: column; }
   .filter-group select { width: 100%; }
+
+  /* 좁은 화면에서는 "경력"/"정렬" 텍스트 라벨을 숨기고 select만 노출 (접근성은 aria-label로 유지) */
+  .sort-select label { display: none; }
 
   .card-grid { grid-template-columns: 1fr; }
 

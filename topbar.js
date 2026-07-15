@@ -172,7 +172,7 @@ function fillSelect(id, options, valueKey, labelKey) {
 }
 
 // ===== 전역 검색 드로어 내부: 필터링된 공고 목록 =====
-let searchState = { keyword: "", city: "전체", sort: "latest", career: "전체" };
+let searchState = { keyword: "", city: "전체", sort: "latest", career: "경력 전체" };
 
 function renderSearchTab() {
   fillSelect("f-city", CITY_OPTIONS);
