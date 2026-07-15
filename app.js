@@ -109,14 +109,14 @@ function renderJobTab() {
 
   if (jobState.subcategory === "전체") {
     const totalFiltered = filterByCareer(POSTINGS, jobState.career).length;
-    document.getElementById("job-count").innerHTML = `총 <b>${totalFiltered}건</b>`;
+    document.getElementById("job-count").innerHTML = `<span class="count-nowrap">총 <b>${totalFiltered}건</b></span>`;
     gridWrap.style.display = "none";
     gridWrap.innerHTML = "";
     sectionsWrap.style.display = "block";
     renderJobSections(sectionsWrap);
   } else {
     const list = sortJobs(filterByCareer(POSTINGS.filter(j => j.subcategory === jobState.subcategory), jobState.career), jobState.sort);
-    document.getElementById("job-count").innerHTML = `총 <b>${list.length}건</b>`;
+    document.getElementById("job-count").innerHTML = `<span class="count-nowrap">총 <b>${list.length}건</b></span>`;
     sectionsWrap.style.display = "none";
     sectionsWrap.innerHTML = "";
     gridWrap.style.display = "grid";
@@ -338,7 +338,7 @@ function renderRegionCards() {
   list = sortJobs(list, regionState.sort);
 
   const label = regionState.hub ? `⭐ ${regionState.hub.name}` : "";
-  document.getElementById("region-count").innerHTML = `${label} 총 <b>${list.length}건</b>`;
+  document.getElementById("region-count").innerHTML = `${label} <span class="count-nowrap">총 <b>${list.length}건</b></span>`;
   renderCardList(document.getElementById("region-cards"), list);
 }
 

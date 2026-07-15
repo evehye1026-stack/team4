@@ -875,6 +875,11 @@ html, body {
 .result-count b {
   font-family: var(--font-mono);
   color: var(--accent);
+  white-space: nowrap;
+}
+
+.count-nowrap {
+  white-space: nowrap;
 }
 
 .empty-state {
