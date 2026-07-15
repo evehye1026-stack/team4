@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8E7BFF"/>
+      <stop offset="100%" stop-color="#6C4DF6"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+  <!-- 흰색 배(돛단배) 실루엣 -->
+  <path d="M14 42 L50 42 L44 50 L20 50 Z" fill="#ffffff"/>
+  <path d="M32 40 L32 15 L46 37 Z" fill="#ffffff"/>
+  <rect x="30.5" y="15" width="3" height="27" fill="#ffffff"/>
+</svg>
