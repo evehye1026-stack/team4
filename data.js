@@ -29,6 +29,16 @@ const CITY_COORDS = {
   "제주": [33.4996, 126.5312],
 };
 
+// 원티드에는 지하철역 좌표가 없어(주소는 문자열만 제공), 잘 알려진 IT 업무 허브를
+// full_location 텍스트 키워드로 탐지해 지도에 강조 표시한다 (역세권 강조의 근사치).
+const JOB_HUBS = [
+  { name: "강남·테헤란로", coords: [37.5006, 127.0364], keywords: ["강남", "테헤란로", "역삼"] },
+  { name: "판교", coords: [37.4019, 127.1086], keywords: ["판교"] },
+  { name: "여의도", coords: [37.5219, 126.9245], keywords: ["여의도"] },
+  { name: "구로·가산디지털단지", coords: [37.4820, 126.8945], keywords: ["구로디지털", "가산디지털", "구로구", "금천구"] },
+  { name: "성수", coords: [37.5445, 127.0557], keywords: ["성수"] },
+];
+
 const EMPLOYMENT_TYPE_LABELS = { regular: "정규직", contract: "계약직", intern: "인턴" };
 function employmentTypeLabel(type) {
   return EMPLOYMENT_TYPE_LABELS[type] || type || "-";
@@ -38,6 +48,35 @@ const SORT_OPTIONS = [
   { value: "latest", label: "최신순" },
   { value: "deadline", label: "마감임박순" },
 ];
+
+// 원티드 원본 직무 태그(39종)를 직무별 개발 공고 섹션에서 보기 좋도록 20종 내외로 묶는다.
+const SUBCATEGORY_GROUPS = [
+  { name: "백엔드", match: /서버 개발자|자바 개발자|Node\.js 개발자|PHP 개발자|\.NET 개발자|소프트웨어 엔지니어/i },
+  { name: "파이썬 개발", match: /파이썬 개발자/i },
+  { name: "프론트엔드", match: /프론트엔드 개발자|웹 퍼블리셔/i },
+  { name: "웹 개발", match: /웹 개발자/i },
+  { name: "모바일", match: /안드로이드 개발자|iOS 개발자|크로스플랫폼 앱 개발자/i },
+  { name: "AI・머신러닝", match: /머신러닝 엔지니어/i },
+  { name: "데이터 사이언스", match: /데이터 사이언티스트/i },
+  { name: "데이터 엔지니어링", match: /데이터 엔지니어|빅데이터 엔지니어|BI 엔지니어|DBA/i },
+  { name: "DevOps・인프라", match: /DevOps|시스템,네트워크 관리자|시스템 관리자/i },
+  { name: "임베디드・펌웨어", match: /임베디드 개발자|C,C\+\+ 개발자/i },
+  { name: "하드웨어・로봇", match: /하드웨어 엔지니어|로봇/i },
+  { name: "QA・테스트", match: /QA|테스트 엔지니어/i },
+  { name: "그래픽스・VR", match: /그래픽스 엔지니어|VR 엔지니어/i },
+  { name: "블록체인", match: /블록체인/i },
+  { name: "PM・기획", match: /프로덕트 매니저|개발 매니저|프로젝트 엔지니어/i },
+  { name: "테크 리더십", match: /CTO|CIO|Chief/i },
+  { name: "ERP・RPA", match: /ERP전문가|RPA엔지니어/i },
+  { name: "영상・음성", match: /영상,음성 엔지니어/i },
+  { name: "기술지원・문서화", match: /기술지원|테크니컬 라이터/i },
+];
+
+function mapToSubcategoryGroup(raw) {
+  if (!raw) return "기타";
+  const found = SUBCATEGORY_GROUPS.find(g => g.match.test(raw));
+  return found ? found.name : "기타";
+}
 
 function sortJobs(list, sortKey) {
   const copy = [...list];

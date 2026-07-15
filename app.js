@@ -64,6 +64,12 @@ globalSearchBtn.addEventListener("click", () => {
 });
 document.getElementById("search-drawer-close").addEventListener("click", closeSearchDrawer);
 searchDrawerBackdrop.addEventListener("click", closeSearchDrawer);
+document.getElementById("hero-search-cta").addEventListener("click", openSearchDrawer);
+
+// ===== 공지 배너 닫기 =====
+document.getElementById("announce-close").addEventListener("click", () => {
+  document.getElementById("announce-banner").classList.add("closed");
+});
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && searchDrawer.classList.contains("open")) closeSearchDrawer();
   if (e.key === "Escape" && authDrawer.classList.contains("open")) closeAuthDrawer();
@@ -155,6 +161,9 @@ function renderJobTab() {
   const pillWrap = document.getElementById("job-subcategory-pills");
   pillWrap.innerHTML = "";
   SUBCATEGORIES.forEach(sub => {
+    const wrap = document.createElement("div");
+    wrap.className = "pill-wrap";
+
     const btn = document.createElement("button");
     btn.className = "pill" + (sub === jobState.subcategory ? " active" : "");
     btn.textContent = sub;
@@ -162,7 +171,30 @@ function renderJobTab() {
       jobState.subcategory = sub;
       renderJobTab();
     });
-    pillWrap.appendChild(btn);
+    wrap.appendChild(btn);
+
+    if (sub !== "전체") {
+      const list = sortJobs(POSTINGS.filter(j => j.subcategory === sub), "latest");
+      if (list.length > 0) {
+        const preview = document.createElement("div");
+        preview.className = "pill-preview";
+        const items = list.slice(0, 4).map(job => `
+          <div class="pill-preview-item">
+            <span class="pill-preview-name">${job.name}</span>
+            <span class="pill-preview-company">${job.company}</span>
+          </div>
+        `).join("");
+        const more = list.length > 4 ? `<div class="pill-preview-more">+${list.length - 4}건 더보기</div>` : "";
+        preview.innerHTML = `
+          <div class="pill-preview-head"><span>${sub}</span><b>${list.length}건</b></div>
+          ${items}
+          ${more}
+        `;
+        wrap.appendChild(preview);
+      }
+    }
+
+    pillWrap.appendChild(wrap);
   });
 
   fillSelect("job-sort", SORT_OPTIONS, "value", "label");
@@ -249,7 +281,7 @@ function applySearchFilter() {
 
 // ===== ③ 지역별 탭 (지도) =====
 let map, mapInitialized = false;
-let regionState = { city: null, district: null, sort: "latest" };
+let regionState = { city: null, district: null, hub: null, sort: "latest" };
 
 function countByCity(list) {
   const map = {};
@@ -257,11 +289,17 @@ function countByCity(list) {
   return map;
 }
 
+function jobsForHub(hub) {
+  return POSTINGS.filter(j => hub.keywords.some(k => j.fullLocation.includes(k)));
+}
+
 function initMap() {
   map = L.map("map", { scrollWheelZoom: false }).setView([36.3, 127.8], 6.7);
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: '&copy; OpenStreetMap contributors',
+  // 실사 지형/등고선이 있는 기본 OSM 타일 대신, 눈이 덜 피로한 플랫한 배경 지도 사용
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    subdomains: "abcd",
     maxZoom: 18,
   }).addTo(map);
 
@@ -271,14 +309,14 @@ function initMap() {
   Object.entries(CITY_COORDS).forEach(([city, coord]) => {
     const cnt = counts[city] || 0;
     if (cnt === 0) return;
-    const radius = 14 + (cnt / maxCount) * 26;
+    const radius = 12 + (cnt / maxCount) * 22;
 
     const marker = L.circleMarker(coord, {
       radius,
-      color: "#2f6feb",
+      color: "#8E7BFF",
       weight: 1,
-      fillColor: "#2f6feb",
-      fillOpacity: 0.45,
+      fillColor: "#6C4DF6",
+      fillOpacity: 0.3,
     })
       .addTo(map)
       .bindTooltip(`${city} ${cnt}건`, { permanent: false });
@@ -286,7 +324,47 @@ function initMap() {
     marker.on("click", () => selectCity(city));
   });
 
+  // 주요 업무 허브(강남·판교 등) 강조 마커 — 지하철역 좌표는 없어 대표 지점으로 근사
+  const hubCounts = JOB_HUBS
+    .map(hub => ({ ...hub, count: jobsForHub(hub).length }))
+    .filter(h => h.count > 0);
+  const maxHubCount = Math.max(...hubCounts.map(h => h.count), 1);
+
+  hubCounts.forEach(hub => {
+    const radius = 7 + (hub.count / maxHubCount) * 11;
+
+    L.circleMarker(hub.coords, {
+      radius: radius + 7,
+      stroke: false,
+      fillColor: "#4DE3D0",
+      fillOpacity: 0.18,
+      interactive: false,
+    }).addTo(map);
+
+    const hubMarker = L.circleMarker(hub.coords, {
+      radius,
+      color: "#ffffff",
+      weight: 2,
+      fillColor: "#4DE3D0",
+      fillOpacity: 0.95,
+    })
+      .addTo(map)
+      .bindTooltip(`⭐ ${hub.name} ${hub.count}건`, { permanent: false });
+
+    hubMarker.on("click", () => selectHub(hub));
+  });
+
   mapInitialized = true;
+
+  const hubLegend = document.getElementById("hub-legend");
+  hubLegend.innerHTML = hubCounts
+    .sort((a, b) => b.count - a.count)
+    .map((hub, i) => `<span class="legend-item hub-legend-item" data-hub-index="${i}"><span class="dot hub-dot"></span>${hub.name} ${hub.count}건</span>`)
+    .join("");
+  hubLegend.querySelectorAll(".legend-item").forEach(el => {
+    el.style.cursor = "pointer";
+    el.addEventListener("click", () => selectHub(hubCounts[Number(el.dataset.hubIndex)]));
+  });
 
   const legend = document.getElementById("region-legend");
   legend.innerHTML = Object.entries(counts)
@@ -301,6 +379,15 @@ function initMap() {
 
 function selectCity(city) {
   regionState.city = city;
+  regionState.district = null;
+  regionState.hub = null;
+  renderDistrictPills();
+  renderRegionCards();
+}
+
+function selectHub(hub) {
+  regionState.hub = hub;
+  regionState.city = null;
   regionState.district = null;
   renderDistrictPills();
   renderRegionCards();
@@ -336,7 +423,7 @@ function renderDistrictPills() {
 
 function renderRegionCards() {
   const toolbar = document.getElementById("region-toolbar");
-  if (!regionState.city) {
+  if (!regionState.city && !regionState.hub) {
     toolbar.style.display = "none";
     document.getElementById("region-cards").innerHTML = "";
     return;
@@ -350,11 +437,17 @@ function renderRegionCards() {
     renderRegionCards();
   };
 
-  let list = POSTINGS.filter(j => j.city === regionState.city);
-  if (regionState.district) list = list.filter(j => j.district === regionState.district);
+  let list;
+  if (regionState.hub) {
+    list = jobsForHub(regionState.hub);
+  } else {
+    list = POSTINGS.filter(j => j.city === regionState.city);
+    if (regionState.district) list = list.filter(j => j.district === regionState.district);
+  }
   list = sortJobs(list, regionState.sort);
 
-  document.getElementById("region-count").innerHTML = `총 <b>${list.length}건</b>`;
+  const label = regionState.hub ? `⭐ ${regionState.hub.name}` : "";
+  document.getElementById("region-count").innerHTML = `${label} 총 <b>${list.length}건</b>`;
   renderCardList(document.getElementById("region-cards"), list);
 }
 
@@ -882,7 +975,8 @@ function mapSupabaseRow(row) {
     logoUrl: row.logo_url,
     city: row.location || "기타",
     district: parseDistrict(row.full_location),
-    subcategory: (row.category_children && row.category_children[0]) || "기타",
+    fullLocation: row.full_location || "",
+    subcategory: mapToSubcategoryGroup(row.category_children && row.category_children[0]),
     categoryChildren: row.category_children || [],
     employmentType: row.employment_type,
     dueTime: row.due_time,
