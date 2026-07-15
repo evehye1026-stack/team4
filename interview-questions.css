@@ -118,11 +118,11 @@ html, body {
   margin: 6px 0 10px;
 }
 .iq-sub {
-  font-size: 16px;
+  font-size: clamp(12px, 2.4vw, 16px);
   color: #545a72;
   margin: 0;
-  max-width: 640px;
   line-height: 1.6;
+  white-space: nowrap;
 }
 
 /* ===== 폴백 배너 ===== */
