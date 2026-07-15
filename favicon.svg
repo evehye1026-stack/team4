@@ -6,7 +6,8 @@
     </linearGradient>
   </defs>
   <rect width="64" height="64" rx="16" fill="url(#bg)"/>
-  <text x="32" y="43" text-anchor="middle"
-        font-family="'Space Grotesk', 'Segoe UI', Arial, sans-serif"
-        font-size="34" font-weight="700" fill="#ffffff">S</text>
+  <!-- 흰색 배(돛단배) 실루엣 -->
+  <path d="M14 42 L50 42 L44 50 L20 50 Z" fill="#ffffff"/>
+  <path d="M32 40 L32 15 L46 37 Z" fill="#ffffff"/>
+  <rect x="30.5" y="15" width="3" height="27" fill="#ffffff"/>
 </svg>
