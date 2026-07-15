@@ -51,7 +51,7 @@ const SORT_OPTIONS = [
 
 // 원티드 실제 API는 공고별 경력 조건을 구조화된 필드로 제공하지 않는다(신입/학력/급여처럼 공고명 텍스트에만 간혹 등장).
 // 그래서 공고명에 "신입"/"N년 이상"/"경력무관" 같은 표현이 있는지 best-effort로 추출하고, 명시되지 않은 공고는 "경력무관"으로 취급한다.
-const CAREER_LEVEL_OPTIONS = ["전체", "신입", "경력", "경력무관"];
+const CAREER_LEVEL_OPTIONS = ["경력 전체", "신입", "경력", "경력무관"];
 
 function parseCareerLevel(name) {
   if (!name) return "경력무관";
@@ -62,7 +62,7 @@ function parseCareerLevel(name) {
 }
 
 function filterByCareer(list, career) {
-  if (!career || career === "전체") return list;
+  if (!career || career === "경력 전체") return list;
   return list.filter(job => job.careerLevel === career);
 }
 

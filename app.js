@@ -48,7 +48,7 @@ tabButtons.forEach(btn => {
 });
 
 // ===== ① 직업 탭 =====
-let jobState = { subcategory: "전체", sort: "latest", career: "전체" };
+let jobState = { subcategory: "전체", sort: "latest", career: "경력 전체" };
 
 function renderJobTab() {
   const pillWrap = document.getElementById("job-subcategory-pills");
@@ -164,7 +164,7 @@ function renderJobSections(wrap) {
 
 // ===== ③ 지역별 탭 (지도) =====
 let map, mapInitialized = false;
-let regionState = { city: null, district: null, hub: null, sort: "latest", career: "전체" };
+let regionState = { city: null, district: null, hub: null, sort: "latest", career: "경력 전체" };
 
 function countByCity(list) {
   const map = {};
