@@ -48,7 +48,7 @@ tabButtons.forEach(btn => {
 });
 
 // ===== ① 직업 탭 =====
-let jobState = { subcategory: "전체", sort: "latest" };
+let jobState = { subcategory: "전체", sort: "latest", career: "전체" };
 
 function renderJobTab() {
   const pillWrap = document.getElementById("job-subcategory-pills");
@@ -67,7 +67,7 @@ function renderJobTab() {
     wrap.appendChild(btn);
 
     if (sub !== "전체") {
-      const list = sortJobs(POSTINGS.filter(j => j.subcategory === sub), "latest");
+      const list = sortJobs(filterByCareer(POSTINGS.filter(j => j.subcategory === sub), jobState.career), "latest");
       if (list.length > 0) {
         const preview = document.createElement("div");
         preview.className = "pill-preview";
@@ -90,6 +90,13 @@ function renderJobTab() {
     pillWrap.appendChild(wrap);
   });
 
+  fillSelect("job-career", CAREER_LEVEL_OPTIONS);
+  document.getElementById("job-career").value = jobState.career;
+  document.getElementById("job-career").onchange = (e) => {
+    jobState.career = e.target.value;
+    renderJobTab();
+  };
+
   fillSelect("job-sort", SORT_OPTIONS, "value", "label");
   document.getElementById("job-sort").value = jobState.sort;
   document.getElementById("job-sort").onchange = (e) => {
@@ -101,13 +108,14 @@ function renderJobTab() {
   const gridWrap = document.getElementById("job-cards");
 
   if (jobState.subcategory === "전체") {
-    document.getElementById("job-count").innerHTML = `총 <b>${POSTINGS.length}건</b>`;
+    const totalFiltered = filterByCareer(POSTINGS, jobState.career).length;
+    document.getElementById("job-count").innerHTML = `총 <b>${totalFiltered}건</b>`;
     gridWrap.style.display = "none";
     gridWrap.innerHTML = "";
     sectionsWrap.style.display = "block";
     renderJobSections(sectionsWrap);
   } else {
-    const list = sortJobs(POSTINGS.filter(j => j.subcategory === jobState.subcategory), jobState.sort);
+    const list = sortJobs(filterByCareer(POSTINGS.filter(j => j.subcategory === jobState.subcategory), jobState.career), jobState.sort);
     document.getElementById("job-count").innerHTML = `총 <b>${list.length}건</b>`;
     sectionsWrap.style.display = "none";
     sectionsWrap.innerHTML = "";
@@ -117,10 +125,12 @@ function renderJobTab() {
 }
 
 // 직무별로 이어지는 섹션(가로 스크롤 행) 뷰 — 전체 선택 시 기본 노출
+const JOB_SECTION_PREVIEW_COUNT = 5;
+
 function renderJobSections(wrap) {
   wrap.innerHTML = "";
   SUBCATEGORIES.filter(sub => sub !== "전체").forEach(sub => {
-    const list = sortJobs(POSTINGS.filter(j => j.subcategory === sub), jobState.sort);
+    const list = sortJobs(filterByCareer(POSTINGS.filter(j => j.subcategory === sub), jobState.career), jobState.sort);
     if (list.length === 0) return;
 
     const section = document.createElement("div");
@@ -132,14 +142,29 @@ function renderJobSections(wrap) {
       <div class="job-section-row"></div>
     `;
     const row = section.querySelector(".job-section-row");
-    list.forEach(job => row.appendChild(renderJobCard(job)));
+    list.slice(0, JOB_SECTION_PREVIEW_COUNT).forEach(job => row.appendChild(renderJobCard(job)));
+
+    const remaining = list.length - JOB_SECTION_PREVIEW_COUNT;
+    if (remaining > 0) {
+      const moreBtn = document.createElement("button");
+      moreBtn.type = "button";
+      moreBtn.className = "job-section-more";
+      moreBtn.innerHTML = `<span class="job-section-more-arrow">→</span><span>더보기<br>+${remaining}건</span>`;
+      moreBtn.addEventListener("click", () => {
+        jobState.subcategory = sub;
+        renderJobTab();
+        document.getElementById("job-subcategory-pills").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      row.appendChild(moreBtn);
+    }
+
     wrap.appendChild(section);
   });
 }
 
 // ===== ③ 지역별 탭 (지도) =====
 let map, mapInitialized = false;
-let regionState = { city: null, district: null, hub: null, sort: "latest" };
+let regionState = { city: null, district: null, hub: null, sort: "latest", career: "전체" };
 
 function countByCity(list) {
   const map = {};
@@ -288,6 +313,13 @@ function renderRegionCards() {
   }
   toolbar.style.display = "flex";
 
+  fillSelect("region-career", CAREER_LEVEL_OPTIONS);
+  document.getElementById("region-career").value = regionState.career;
+  document.getElementById("region-career").onchange = (e) => {
+    regionState.career = e.target.value;
+    renderRegionCards();
+  };
+
   fillSelect("region-sort", SORT_OPTIONS, "value", "label");
   document.getElementById("region-sort").value = regionState.sort;
   document.getElementById("region-sort").onchange = (e) => {
@@ -302,6 +334,7 @@ function renderRegionCards() {
     list = POSTINGS.filter(j => j.city === regionState.city);
     if (regionState.district) list = list.filter(j => j.district === regionState.district);
   }
+  list = filterByCareer(list, regionState.career);
   list = sortJobs(list, regionState.sort);
 
   const label = regionState.hub ? `⭐ ${regionState.hub.name}` : "";
