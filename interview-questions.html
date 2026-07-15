@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>예상 면접질문 · SHIPYARD Careers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="interview-questions.css">
+</head>
+<body>
+<a class="skip-link" href="#main">본문 바로가기</a>
+
+<header class="iq-nav">
+  <div class="iq-nav-inner">
+    <a class="iq-logo" href="index.html">SHIPYARD</a>
+    <a class="iq-back" href="index.html">← 채용 대시보드</a>
+  </div>
+</header>
+
+<main id="main" class="iq-main">
+
+  <section class="iq-job-context" aria-label="선택된 공고 정보">
+    <div class="iq-job-select-row">
+      <label for="job-select" class="mono-label">공고 선택</label>
+      <select id="job-select" class="iq-select" aria-label="면접질문을 확인할 공고 선택"></select>
+    </div>
+    <div class="iq-job-card" id="job-card"></div>
+  </section>
+
+  <section class="iq-header">
+    <span class="mono-label" id="iq-category-label">SERVER</span>
+    <h1 class="iq-title">예상 면접질문</h1>
+    <p class="iq-sub">서로 다른 코드가 모여 하나의 제품이 됩니다 — 지원 전, 이 직무에서 자주 나오는 질문을 먼저 확인하세요.</p>
+  </section>
+
+  <div class="iq-fallback-banner" id="fallback-banner" role="status" hidden>
+    이 직무의 질문이 아직 준비되지 않아, 공통 질문을 대신 보여드려요.
+  </div>
+
+  <div class="iq-toolbar">
+    <div class="iq-tabs" role="tablist" aria-label="질문 유형 필터">
+      <button class="iq-tab active" role="tab" data-type="전체" aria-selected="true">전체</button>
+      <button class="iq-tab" role="tab" data-type="기술" aria-selected="false">기술</button>
+      <button class="iq-tab" role="tab" data-type="인성" aria-selected="false">인성</button>
+      <button class="iq-tab" role="tab" data-type="경험" aria-selected="false">경험</button>
+    </div>
+    <div class="iq-toolbar-right">
+      <span class="mono-label" id="iq-count">0개 질문</span>
+      <span class="mono-label iq-bookmark-count" id="iq-bookmark-count">스크랩 0</span>
+      <button class="iq-cta" id="practice-start-btn">연습해보기 →</button>
+    </div>
+  </div>
+
+  <ul class="iq-list" id="iq-list" aria-label="예상 면접질문 목록"></ul>
+
+</main>
+
+<!-- 연습 모드 (카드 뒤집기) -->
+<div class="iq-practice-backdrop" id="practice-backdrop" hidden>
+  <div class="iq-practice-panel" role="dialog" aria-modal="true" aria-label="면접질문 연습 모드">
+    <div class="iq-practice-head">
+      <span class="mono-label" id="practice-progress">01 / 07</span>
+      <button class="iq-icon-btn" id="practice-close-btn" aria-label="연습 모드 닫기">✕</button>
+    </div>
+
+    <div class="iq-flashcard" id="iq-flashcard" tabindex="0" role="button" aria-pressed="false" aria-label="카드를 클릭하거나 스페이스바를 누르면 답변 팁이 보여요">
+      <span class="mono-label iq-flashcard-type" id="flashcard-type">기술</span>
+      <p class="iq-flashcard-question" id="flashcard-question"></p>
+      <div class="iq-flashcard-tip" id="flashcard-tip" hidden>
+        <span class="mono-label">답변 팁</span>
+        <p id="flashcard-tip-text"></p>
+      </div>
+      <span class="iq-flashcard-hint" id="flashcard-hint">클릭하거나 스페이스바를 눌러 답변 팁 보기</span>
+    </div>
+
+    <label class="iq-note-label mono-label" for="practice-note">나의 답변 메모 <span class="iq-note-scope">(이 브라우저에만 저장돼요)</span></label>
+    <textarea id="practice-note" class="iq-note" rows="3" placeholder="이 질문에 어떻게 답할지 메모해보세요"></textarea>
+
+    <div class="iq-practice-nav">
+      <button class="iq-nav-btn" id="practice-prev-btn">← 이전</button>
+      <button class="iq-bookmark-btn" id="practice-bookmark-btn" aria-pressed="false">☆ 스크랩</button>
+      <button class="iq-nav-btn" id="practice-next-btn">다음 →</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="interview-questions-data.js"></script>
+<script src="interview-questions.js"></script>
+</body>
+</html>

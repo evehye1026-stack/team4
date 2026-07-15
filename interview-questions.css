@@ -1,0 +1,416 @@
+/* design.md 컬러 토큰 / 타이포그래피 스펙을 이 화면에 그대로 적용 */
+:root {
+  --ink: #0B1020;
+  --bg: #FFFFFF;
+  --paper: #F6F7FB;
+  --line: #E6E8EF;
+  --hero-deep: #070B24;
+  --hero-navy: #101A54;
+  --accent: #6C4DF6;
+  --accent-glow: #8E7BFF;
+  --signal: #4DE3D0;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 16px;
+  z-index: 100;
+}
+.skip-link:focus { left: 12px; top: 12px; }
+
+:focus-visible {
+  outline: 3px solid var(--accent-glow);
+  outline-offset: 2px;
+}
+
+.mono-label {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* ===== 네비 ===== */
+.iq-nav {
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+.iq-nav-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.iq-logo {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -.01em;
+  color: var(--ink);
+  text-decoration: none;
+}
+.iq-back {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color .15s, color .15s;
+}
+.iq-back:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ===== 본문 레이아웃 ===== */
+.iq-main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px 96px;
+}
+
+/* ===== 공고 컨텍스트 ===== */
+.iq-job-select-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.iq-select {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.iq-select:hover { border-color: var(--accent); }
+
+.iq-job-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.iq-job-logo { font-size: 28px; line-height: 1; }
+.iq-job-info { display: flex; flex-direction: column; gap: 4px; }
+.iq-job-name {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 600;
+  font-size: 17px;
+  margin: 0;
+}
+.iq-job-meta {
+  font-size: 13px;
+  color: #545a72;
+  margin: 0;
+}
+.iq-job-dday {
+  margin-left: auto;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--accent);
+  background: #efeafe;
+  border-radius: 999px;
+  padding: 4px 12px;
+  white-space: nowrap;
+}
+
+/* ===== 헤더 (제목) ===== */
+.iq-header { margin: 40px 0 20px; }
+.iq-header .mono-label { color: var(--accent); }
+.iq-title {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: clamp(30px, 4.5vw, 48px);
+  letter-spacing: -.01em;
+  margin: 6px 0 10px;
+}
+.iq-sub {
+  font-size: 16px;
+  color: #545a72;
+  margin: 0;
+  max-width: 640px;
+  line-height: 1.6;
+}
+
+/* ===== 폴백 배너 ===== */
+.iq-fallback-banner {
+  background: var(--paper);
+  border: 1px dashed var(--accent);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+/* ===== 툴바 (탭 + 카운트 + CTA) ===== */
+.iq-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 14px;
+  margin-bottom: 4px;
+}
+.iq-tabs { display: flex; gap: 4px; }
+.iq-tab {
+  appearance: none;
+  border: none;
+  background: none;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #7b8098;
+  padding: 8px 14px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.iq-tab:hover { color: var(--ink); }
+.iq-tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+
+.iq-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.iq-toolbar-right .mono-label { color: #7b8098; font-weight: 600; }
+.iq-bookmark-count { color: var(--signal) !important; }
+
+.iq-cta {
+  appearance: none;
+  border: none;
+  background: var(--ink);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s, transform .15s;
+}
+.iq-cta:hover { background: var(--hero-navy); }
+.iq-cta:active { transform: scale(.98); }
+
+/* ===== 질문 리스트 ===== */
+.iq-list { list-style: none; margin: 0; padding: 0; }
+.iq-item { border-bottom: 1px solid var(--line); transition: border-color .15s; }
+.iq-item:hover { border-color: var(--accent); }
+
+.iq-item-row { display: flex; align-items: center; gap: 8px; }
+
+.iq-item-toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  appearance: none;
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 20px 4px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--ink);
+}
+.iq-item-type {
+  flex: none;
+  width: 52px;
+  color: var(--accent);
+}
+.iq-item-question {
+  flex: 1;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(15px, 1.6vw, 18px);
+  font-weight: 500;
+  line-height: 1.4;
+}
+.iq-item-chevron {
+  flex: none;
+  color: #7b8098;
+  transition: transform .2s ease-out;
+}
+.iq-item-toggle[aria-expanded="true"] .iq-item-chevron { transform: rotate(180deg); color: var(--accent); }
+
+.iq-item-bookmark {
+  flex: none;
+  appearance: none;
+  border: none;
+  background: none;
+  font-size: 18px;
+  color: #c3c7d6;
+  cursor: pointer;
+  padding: 8px;
+  line-height: 1;
+}
+.iq-item-bookmark[aria-pressed="true"] { color: var(--signal); }
+.iq-item-bookmark:hover { color: var(--accent); }
+
+.iq-item-tip {
+  background: var(--paper);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin: 0 4px 20px;
+}
+.iq-item-tip .mono-label { color: var(--signal); display: block; margin-bottom: 6px; }
+.iq-item-tip p { margin: 0; font-size: 14px; line-height: 1.6; color: #33384d; }
+
+.iq-empty {
+  padding: 40px 4px;
+  color: #7b8098;
+  font-size: 14px;
+}
+
+/* ===== 연습 모드 오버레이 ===== */
+.iq-practice-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 11, 36, .55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 50;
+}
+.iq-practice-backdrop[hidden] { display: none; }
+.iq-practice-panel {
+  background: var(--bg);
+  border-radius: 20px;
+  max-width: 520px;
+  width: 100%;
+  padding: 24px 28px 28px;
+  box-shadow: 0 24px 60px rgba(7, 11, 36, .35);
+}
+.iq-practice-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.iq-practice-head .mono-label { color: #7b8098; }
+
+.iq-icon-btn {
+  appearance: none;
+  border: none;
+  background: var(--paper);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink);
+}
+.iq-icon-btn:hover { background: var(--line); }
+
+.iq-flashcard {
+  background: var(--hero-deep);
+  background-image: radial-gradient(circle at 30% 20%, var(--hero-navy), var(--hero-deep) 70%);
+  border-radius: 16px;
+  padding: 36px 28px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+  cursor: pointer;
+}
+.iq-flashcard-type { color: var(--signal); }
+.iq-flashcard-question {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 600;
+  font-size: clamp(18px, 2.4vw, 24px);
+  color: #fff;
+  line-height: 1.4;
+  margin: 0;
+}
+.iq-flashcard-tip {
+  border-top: 1px solid rgba(255,255,255,.2);
+  padding-top: 14px;
+  width: 100%;
+}
+.iq-flashcard-tip .mono-label { color: var(--signal); display: block; margin-bottom: 6px; }
+.iq-flashcard-tip p { color: rgba(255,255,255,.88); font-size: 14px; line-height: 1.6; margin: 0; }
+.iq-flashcard-hint { color: rgba(255,255,255,.55); font-size: 12px; }
+
+.iq-note-label { display: block; margin: 18px 0 8px; color: #7b8098; }
+.iq-note-scope { text-transform: none; letter-spacing: normal; font-weight: 400; }
+.iq-note {
+  width: 100%;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+.iq-note:focus-visible { border-color: var(--accent); }
+
+.iq-practice-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 18px;
+}
+.iq-nav-btn, .iq-bookmark-btn {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.iq-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+.iq-nav-btn:disabled { opacity: .4; cursor: not-allowed; }
+.iq-bookmark-btn[aria-pressed="true"] { border-color: var(--signal); color: #0c8f7d; }
+
+/* ===== 모션 절제 ===== */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* ===== 반응형 ===== */
+@media (max-width: 640px) {
+  .iq-job-card { flex-wrap: wrap; }
+  .iq-job-dday { margin-left: 0; }
+  .iq-toolbar { flex-direction: column; align-items: flex-start; }
+  .iq-toolbar-right { width: 100%; justify-content: space-between; }
+  .iq-item-toggle { gap: 10px; }
+  .iq-item-type { width: 40px; font-size: 10px; }
+  .iq-practice-panel { padding: 20px 18px 22px; }
+}
