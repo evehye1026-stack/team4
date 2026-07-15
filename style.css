@@ -487,8 +487,13 @@ html, body {
   gap: 8px;
 }
 
+.topbar-auth .pill {
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
 .topbar-account-email {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ink-sub);
 }
