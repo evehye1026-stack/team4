@@ -1,23 +1,31 @@
-// Supabase 클라이언트는 앱 전체에서 하나만 공유 (채용공고 조회 + 이력서 탭 로그인/CRUD)
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// supabaseClient / currentUser는 topbar.js에서 선언 (모든 페이지 공용 로그인 상태)
 
-// ===== GNB 전환 (채용 / 이력서 / 고용 이벤트 / 커뮤니티) =====
-const gnbButtons = document.querySelectorAll(".gnb-btn");
+// ===== GNB 전환 (채용 / 이력서) =====
+const gnbButtons = document.querySelectorAll(".gnb-btn[data-gnb]");
 const gnbPanels = document.querySelectorAll(".gnb-panel");
 
-gnbButtons.forEach(btn => {
-  btn.addEventListener("click", () => {
-    gnbButtons.forEach(b => b.classList.remove("active"));
-    gnbPanels.forEach(p => p.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById(`gnb-${btn.dataset.gnb}`).classList.add("active");
+function activateGnb(gnbKey) {
+  const targetBtn = [...gnbButtons].find(b => b.dataset.gnb === gnbKey);
+  const targetPanel = document.getElementById(`gnb-${gnbKey}`);
+  if (!targetBtn || !targetPanel) return;
 
-    // 채용 탭으로 돌아왔을 때 지도가 보이는 상태라면 크기 재계산
-    if (btn.dataset.gnb === "job" && mapInitialized && document.getElementById("tab-region").classList.contains("active")) {
-      setTimeout(() => map.invalidateSize(), 0);
-    }
-  });
+  gnbButtons.forEach(b => b.classList.remove("active"));
+  gnbPanels.forEach(p => p.classList.remove("active"));
+  targetBtn.classList.add("active");
+  targetPanel.classList.add("active");
+
+  // 채용 탭으로 돌아왔을 때 지도가 보이는 상태라면 크기 재계산
+  if (gnbKey === "job" && mapInitialized && document.getElementById("tab-region").classList.contains("active")) {
+    setTimeout(() => map.invalidateSize(), 0);
+  }
+}
+
+gnbButtons.forEach(btn => {
+  btn.addEventListener("click", () => activateGnb(btn.dataset.gnb));
 });
+
+// interview-questions.html의 "이력서" 링크(index.html#resume)처럼, 다른 페이지에서 특정 탭으로 바로 진입할 수 있게 처리
+if (location.hash === "#resume") activateGnb("resume");
 
 // ===== 탭 전환 (채용 내부: 직업 / 지역별) =====
 const tabButtons = document.querySelectorAll(".tab-btn");
@@ -38,121 +46,6 @@ tabButtons.forEach(btn => {
     }
   });
 });
-
-// ===== 전역 검색 드로어 (상단바 우측 돋보기 버튼) =====
-const searchDrawer = document.getElementById("search-drawer");
-const searchDrawerBackdrop = document.getElementById("search-drawer-backdrop");
-const globalSearchBtn = document.getElementById("global-search-btn");
-
-function openSearchDrawer() {
-  searchDrawer.classList.add("open");
-  searchDrawerBackdrop.classList.add("open");
-  searchDrawer.setAttribute("aria-hidden", "false");
-  globalSearchBtn.setAttribute("aria-expanded", "true");
-  document.getElementById("search-input").focus();
-}
-
-function closeSearchDrawer() {
-  searchDrawer.classList.remove("open");
-  searchDrawerBackdrop.classList.remove("open");
-  searchDrawer.setAttribute("aria-hidden", "true");
-  globalSearchBtn.setAttribute("aria-expanded", "false");
-}
-
-globalSearchBtn.addEventListener("click", () => {
-  searchDrawer.classList.contains("open") ? closeSearchDrawer() : openSearchDrawer();
-});
-document.getElementById("search-drawer-close").addEventListener("click", closeSearchDrawer);
-searchDrawerBackdrop.addEventListener("click", closeSearchDrawer);
-document.getElementById("hero-search-cta").addEventListener("click", openSearchDrawer);
-
-// ===== 공지 배너 닫기 =====
-document.getElementById("announce-close").addEventListener("click", () => {
-  document.getElementById("announce-banner").classList.add("closed");
-});
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && searchDrawer.classList.contains("open")) closeSearchDrawer();
-  if (e.key === "Escape" && authDrawer.classList.contains("open")) closeAuthDrawer();
-});
-
-// ===== 로그인/회원가입 드로어 (상단바 우측) =====
-const authDrawer = document.getElementById("auth-drawer");
-const authDrawerBackdrop = document.getElementById("auth-drawer-backdrop");
-
-function openAuthDrawer() {
-  authDrawer.classList.add("open");
-  authDrawerBackdrop.classList.add("open");
-  authDrawer.setAttribute("aria-hidden", "false");
-  document.getElementById("auth-email").focus();
-}
-
-function closeAuthDrawer() {
-  authDrawer.classList.remove("open");
-  authDrawerBackdrop.classList.remove("open");
-  authDrawer.setAttribute("aria-hidden", "true");
-}
-
-document.getElementById("topbar-login-btn").addEventListener("click", openAuthDrawer);
-document.getElementById("topbar-signup-btn").addEventListener("click", openAuthDrawer);
-document.getElementById("auth-drawer-close").addEventListener("click", closeAuthDrawer);
-authDrawerBackdrop.addEventListener("click", closeAuthDrawer);
-document.getElementById("topbar-logout-btn").addEventListener("click", () => supabaseClient.auth.signOut());
-
-// ===== 공통: 카드 렌더 =====
-function renderJobCard(job) {
-  const div = document.createElement("div");
-  div.className = "job-card";
-  div.tabIndex = 0;
-  div.addEventListener("click", () => window.open(job.url, "_blank"));
-  div.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); window.open(job.url, "_blank"); }
-  });
-  const reward = formatReward(job);
-  div.innerHTML = `
-    <div class="logo">
-      <span>${job.company ? job.company.charAt(0) : "🏢"}</span>
-      ${job.logoUrl ? `<img class="logo-img" src="${job.logoUrl}" alt="" loading="lazy" onerror="this.remove()">` : ""}
-    </div>
-    <p class="name">${job.name}</p>
-    <p class="company">${job.company}</p>
-    <div class="address">📍 ${job.city}${job.district ? " " + job.district : ""}</div>
-    <div class="meta-row">
-      <span class="salary">${formatDueDate(job)}</span>
-      ${reward ? `<span class="applicants">${reward}</span>` : ""}
-    </div>
-    <div class="tags">
-      <span class="tag">${job.subcategory}</span>
-      <span class="tag">${employmentTypeLabel(job.employmentType)}</span>
-    </div>
-    <div class="job-card-overlay">
-      <div class="overlay-detail"><span class="label">고용형태</span><span class="value">${employmentTypeLabel(job.employmentType)}</span></div>
-      <div class="overlay-detail"><span class="label">마감일</span><span class="value">${formatDueDate(job)}</span></div>
-      <div class="overlay-detail"><span class="label">근무지역</span><span class="value">${job.city} ${job.district}</span></div>
-      <div class="overlay-detail"><span class="label">직무 태그</span><span class="value">${job.categoryChildren.join(", ")}</span></div>
-      <a class="overlay-interview-link" href="interview-questions.html?jobId=${job.id}" target="_blank" rel="noopener">예상 면접질문 보기 →</a>
-    </div>
-  `;
-  div.querySelector(".overlay-interview-link").addEventListener("click", (e) => e.stopPropagation());
-  return div;
-}
-
-function renderCardList(container, list) {
-  container.innerHTML = "";
-  if (list.length === 0) {
-    container.innerHTML = `<div class="empty-state">조건에 맞는 공고가 없습니다.</div>`;
-    return;
-  }
-  list.forEach(job => container.appendChild(renderJobCard(job)));
-}
-
-function fillSelect(id, options, valueKey, labelKey) {
-  const sel = document.getElementById(id);
-  if (typeof options[0] === "string") {
-    sel.innerHTML = options.map(o => `<option value="${o}">${o}</option>`).join("");
-  } else {
-    sel.innerHTML = options.map(o => `<option value="${o[valueKey]}">${o[labelKey]}</option>`).join("");
-  }
-}
 
 // ===== ① 직업 탭 =====
 let jobState = { subcategory: "전체", sort: "latest" };
@@ -242,41 +135,6 @@ function renderJobSections(wrap) {
     list.forEach(job => row.appendChild(renderJobCard(job)));
     wrap.appendChild(section);
   });
-}
-
-// ===== ② 써치 탭 =====
-let searchState = { keyword: "", city: "전체", sort: "latest" };
-
-function renderSearchTab() {
-  fillSelect("f-city", CITY_OPTIONS);
-  fillSelect("search-sort", SORT_OPTIONS, "value", "label");
-
-  document.getElementById("f-city").value = searchState.city;
-  document.getElementById("search-sort").value = searchState.sort;
-
-  document.getElementById("search-input").oninput = (e) => {
-    searchState.keyword = e.target.value.trim().toLowerCase();
-    applySearchFilter();
-  };
-  document.getElementById("f-city").onchange = (e) => { searchState.city = e.target.value; applySearchFilter(); };
-  document.getElementById("search-sort").onchange = (e) => { searchState.sort = e.target.value; applySearchFilter(); };
-
-  applySearchFilter();
-}
-
-function applySearchFilter() {
-  let list = POSTINGS.filter(job => {
-    if (searchState.city !== "전체" && job.city !== searchState.city) return false;
-    if (searchState.keyword) {
-      const haystack = [job.name, job.company, ...job.categoryChildren].join(" ").toLowerCase();
-      if (!haystack.includes(searchState.keyword)) return false;
-    }
-    return true;
-  });
-  list = sortJobs(list, searchState.sort);
-
-  document.getElementById("search-count").innerHTML = `조건에 맞는 공고 <b>${list.length}건</b>`;
-  renderCardList(document.getElementById("search-cards"), list);
 }
 
 // ===== ③ 지역별 탭 (지도) =====
@@ -453,13 +311,7 @@ function renderRegionCards() {
 
 // ===== ④ 이력서 탭 (Supabase Auth 로그인 + 이력서/지원내역 CRUD) =====
 // 원티드 API에는 개인 지원 내역이 없어 사용자가 직접 기록하는 트래커로 대체했다.
-let currentUser = null;
-
-function authMessage(text, isError) {
-  const el = document.getElementById("auth-message");
-  el.textContent = text;
-  el.style.color = isError ? "#e5484d" : "";
-}
+// currentUser / renderAuthTab / authMessage는 topbar.js에서 관리 (모든 페이지 공용 로그인 상태).
 
 let latestEducation = [];
 let latestExperience = [];
@@ -478,24 +330,6 @@ function computeCompleteness(resume) {
   ];
   const filled = fields.filter(v => v && String(v).trim()).length;
   return Math.round((filled / fields.length) * 100);
-}
-
-async function renderAuthTab() {
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  currentUser = session?.user ?? null;
-
-  const guestArea = document.getElementById("topbar-auth-guest");
-  const userArea = document.getElementById("topbar-auth-user");
-
-  if (currentUser) {
-    guestArea.style.display = "none";
-    userArea.style.display = "flex";
-    document.getElementById("topbar-account-email").textContent = currentUser.email;
-    closeAuthDrawer();
-  } else {
-    guestArea.style.display = "flex";
-    userArea.style.display = "none";
-  }
 }
 
 async function renderResumeTab() {
@@ -750,25 +584,6 @@ function initResumeTab() {
 
   document.getElementById("resume-goto-login-btn").addEventListener("click", openAuthDrawer);
 
-  document.getElementById("auth-signup-btn").addEventListener("click", async () => {
-    const email = document.getElementById("auth-email").value.trim();
-    const password = document.getElementById("auth-password").value;
-    if (!email || password.length < 6) {
-      authMessage("이메일과 6자 이상 비밀번호를 입력하세요.", true);
-      return;
-    }
-    const { data, error } = await supabaseClient.auth.signUp({ email, password });
-    if (error) { authMessage(error.message, true); return; }
-    authMessage(data.session ? "가입 완료!" : "가입 확인 이메일을 보냈습니다. 확인 후 로그인해주세요.");
-  });
-
-  document.getElementById("auth-login-btn").addEventListener("click", async () => {
-    const email = document.getElementById("auth-email").value.trim();
-    const password = document.getElementById("auth-password").value;
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) authMessage(error.message, true);
-  });
-
   document.getElementById("resume-save-btn").addEventListener("click", async () => {
     if (!currentUser) return;
     const name = document.getElementById("resume-name-input").value.trim();
@@ -878,154 +693,18 @@ function initResumeTab() {
   });
 
   supabaseClient.auth.onAuthStateChange(() => {
-    renderAuthTab();
     renderResumeTab();
   });
 }
 
-// ===== ⑤ 고용 이벤트 탭 =====
-function renderEventTab() {
-  document.getElementById("event-count").innerHTML = `예정된 이벤트 <b>${EVENTS.length}건</b>`;
-
-  const wrap = document.getElementById("event-cards");
-  wrap.innerHTML = "";
-  EVENTS.forEach(ev => {
-    const div = document.createElement("div");
-    div.className = "job-card";
-    div.innerHTML = `
-      <div class="event-card-head">
-        <span class="tag">${ev.tag}</span>
-        <span class="dday-badge">${ev.dday === 0 ? "오늘" : `D-${ev.dday}`}</span>
-      </div>
-      <p class="name">${ev.title}</p>
-      <p class="company">${ev.host}</p>
-      <div class="address">📍 ${ev.location}</div>
-      <div class="meta-row">
-        <span class="salary">${ev.date}</span>
-      </div>
-    `;
-    wrap.appendChild(div);
-  });
-}
-
-// ===== ⑥ 커뮤니티 탭 =====
-let communityState = { category: "전체" };
-
-function renderCommunityTab() {
-  const pillWrap = document.getElementById("community-category-pills");
-  pillWrap.innerHTML = "";
-  COMMUNITY_CATEGORIES.forEach(cat => {
-    const btn = document.createElement("button");
-    btn.className = "pill" + (cat === communityState.category ? " active" : "");
-    btn.textContent = cat;
-    btn.addEventListener("click", () => {
-      communityState.category = cat;
-      renderCommunityTab();
-    });
-    pillWrap.appendChild(btn);
-  });
-
-  const list = communityState.category === "전체"
-    ? COMMUNITY_POSTS
-    : COMMUNITY_POSTS.filter(p => p.category === communityState.category);
-
-  const listWrap = document.getElementById("community-list");
-  listWrap.innerHTML = "";
-  if (list.length === 0) {
-    listWrap.innerHTML = `<div class="empty-state">게시글이 없습니다.</div>`;
-    return;
-  }
-  list.forEach(post => {
-    const row = document.createElement("div");
-    row.className = "community-row";
-    row.innerHTML = `
-      <div class="community-row-main">
-        <span class="community-category">${post.category}</span>
-        <span class="community-title">${post.title}</span>
-        <span class="community-sub">${post.author} · ${post.createdDaysAgo === 0 ? "오늘" : `${post.createdDaysAgo}일 전`}</span>
-      </div>
-      <div class="community-stats">
-        <span>👍 ${post.likes}</span>
-        <span>💬 ${post.comments}</span>
-      </div>
-    `;
-    listWrap.appendChild(row);
-  });
-}
-
-// ===== Supabase 로더 (jobs 테이블 → POSTINGS) =====
-// 원티드 full_location은 구조화되어 있지 않아, "OO시/도 다음 토큰"을 구/군(시)으로 best-effort 추출한다.
-// 예) "서울특별시 서초구 ..." → "서초구", "경기도 성남시 분당구 ..." → "성남시 분당구"
-function parseDistrict(fullLocation) {
-  if (!fullLocation) return "";
-  const tokens = fullLocation.trim().split(/\s+/);
-  if (tokens.length < 2) return "";
-  if (/시$/.test(tokens[1]) && tokens[2] && /[구군]$/.test(tokens[2])) {
-    return `${tokens[1]} ${tokens[2]}`;
-  }
-  if (/[구군시]$/.test(tokens[1])) return tokens[1];
-  return "";
-}
-
-function mapSupabaseRow(row) {
-  return {
-    id: row.id,
-    name: row.name,
-    company: row.company_name,
-    logoUrl: row.logo_url,
-    city: row.location || "기타",
-    district: parseDistrict(row.full_location),
-    fullLocation: row.full_location || "",
-    subcategory: mapToSubcategoryGroup(row.category_children && row.category_children[0]),
-    categoryChildren: row.category_children || [],
-    employmentType: row.employment_type,
-    dueTime: row.due_time,
-    rewardTotal: row.reward_total,
-    url: row.url,
-  };
-}
-
-async function loadJobs() {
-  const rows = [];
-  const pageSize = 1000;
-
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabaseClient
-      .from("jobs")
-      .select("*")
-      .eq("status", "active")
-      .range(from, from + pageSize - 1);
-    if (error) throw new Error(error.message);
-    if (!data.length) break;
-    rows.push(...data);
-    if (data.length < pageSize) break;
-  }
-
-  return rows.map(mapSupabaseRow);
-}
-
 // ===== 초기 렌더 =====
-async function init() {
-  try {
-    POSTINGS = await loadJobs();
-  } catch (err) {
-    const message = `
-      <div class="empty-state">
-        채용 공고를 불러오지 못했습니다. (${err.message})
-      </div>`;
-    document.getElementById("job-cards").innerHTML = message;
-    console.error(err);
-    return;
-  }
+// 공고 데이터(POSTINGS)는 topbar.js가 로드해서 "postings:loaded"/"postings:error" 이벤트로 알려준다.
+document.addEventListener("postings:loaded", renderJobTab);
+document.addEventListener("postings:error", (e) => {
+  document.getElementById("job-cards").innerHTML = `
+    <div class="empty-state">
+      채용 공고를 불러오지 못했습니다. (${e.detail.error.message})
+    </div>`;
+});
 
-  SUBCATEGORIES = ["전체", ...new Set(POSTINGS.map(j => j.subcategory))];
-  CITY_OPTIONS = ["전체", ...new Set(POSTINGS.map(j => j.city))];
-
-  renderJobTab();
-  renderSearchTab();
-  initResumeTab();
-  renderEventTab();
-  renderCommunityTab();
-}
-
-init();
+initResumeTab();

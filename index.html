@@ -13,27 +13,36 @@
 <body>
 <div id="app">
 
-  <!-- 상단바 (고정) -->
-  <header class="topbar">
-    <h1>SHIPYARD</h1>
-    <span class="badge">개발 직군 전용</span>
-    <div class="topbar-right">
-      <div class="topbar-auth" id="topbar-auth-guest">
-        <button class="pill" id="topbar-login-btn">로그인</button>
-        <button class="pill active" id="topbar-signup-btn">회원가입</button>
+  <!-- 상단바 + 공지 배너 + GNB: 스크롤해도 항상 화면 위에 고정 -->
+  <div class="site-header">
+    <header class="topbar">
+      <h1>SHIPYARD</h1>
+      <span class="badge">개발 직군 전용</span>
+      <div class="topbar-right">
+        <div class="topbar-auth" id="topbar-auth-guest">
+          <button class="pill" id="topbar-login-btn">로그인</button>
+          <button class="pill active" id="topbar-signup-btn">회원가입</button>
+        </div>
+        <div class="topbar-auth" id="topbar-auth-user" style="display:none;">
+          <span class="topbar-account-email" id="topbar-account-email"></span>
+          <button class="pill" id="topbar-logout-btn">로그아웃</button>
+        </div>
+        <button class="global-search-btn" id="global-search-btn" aria-label="검색 열기" aria-expanded="false" aria-controls="search-drawer">🔍</button>
       </div>
-      <div class="topbar-auth" id="topbar-auth-user" style="display:none;">
-        <span class="topbar-account-email" id="topbar-account-email"></span>
-        <button class="pill" id="topbar-logout-btn">로그아웃</button>
-      </div>
-      <button class="global-search-btn" id="global-search-btn" aria-label="검색 열기" aria-expanded="false" aria-controls="search-drawer">🔍</button>
-    </div>
-  </header>
+    </header>
 
-  <!-- 공지 배너 -->
-  <div class="announce-banner" id="announce-banner">
-    <span>🚀 SHIPYARD FFWD · 신입/경력 개발자 상시모집</span>
-    <button class="announce-close" id="announce-close" aria-label="배너 닫기">✕</button>
+    <!-- 공지 배너 -->
+    <div class="announce-banner" id="announce-banner">
+      <span>🚀 SHIPYARD FFWD · 신입/경력 개발자 상시모집</span>
+      <button class="announce-close" id="announce-close" aria-label="배너 닫기">✕</button>
+    </div>
+
+    <!-- GNB (최상단 내비게이션) -->
+    <nav class="gnb">
+      <button class="gnb-btn active" data-gnb="job">채용</button>
+      <button class="gnb-btn" data-gnb="resume">이력서</button>
+      <a class="gnb-btn" href="interview-questions.html">예상면접</a>
+    </nav>
   </div>
 
   <!-- 전역 검색 드로어 (화면 오른쪽에서 슬라이드 인) -->
@@ -78,14 +87,6 @@
     </div>
     <p class="auth-message" id="auth-message"></p>
   </aside>
-
-  <!-- GNB (최상단 내비게이션) -->
-  <nav class="gnb">
-    <button class="gnb-btn active" data-gnb="job">채용</button>
-    <button class="gnb-btn" data-gnb="resume">이력서</button>
-    <button class="gnb-btn" data-gnb="event">고용 이벤트</button>
-    <button class="gnb-btn" data-gnb="community">커뮤니티</button>
-  </nav>
 
   <!-- 콘텐츠 -->
   <main class="content">
@@ -275,26 +276,6 @@
       </div>
     </section>
 
-    <!-- ===== GNB: 고용 이벤트 ===== -->
-    <section id="gnb-event" class="gnb-panel">
-      <h2 class="section-title">고용 이벤트</h2>
-      <p class="section-sub">채용설명회 · 잡페어 등 다가오는 이벤트를 확인하세요.</p>
-
-      <div class="list-toolbar">
-        <span class="result-count" id="event-count"></span>
-      </div>
-      <div id="event-cards" class="card-grid"></div>
-    </section>
-
-    <!-- ===== GNB: 커뮤니티 ===== -->
-    <section id="gnb-community" class="gnb-panel">
-      <h2 class="section-title">커뮤니티</h2>
-      <p class="section-sub">개발자들의 이야기를 나눠보세요.</p>
-
-      <div class="pill-row" id="community-category-pills"></div>
-      <div id="community-list" class="community-list"></div>
-    </section>
-
   </main>
 
   <!-- 이력서 인쇄 전용 뷰 (화면에는 안 보이고 인쇄할 때만 표시) -->
@@ -334,6 +315,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="data.js"></script>
+<script src="topbar.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

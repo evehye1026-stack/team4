@@ -2,7 +2,9 @@
 // 질문 데이터는 Supabase interview_questions 테이블에서 읽어온다.
 // 스크랩/메모(P2)는 로그인 연동 전이라 localStorage에만 저장되는 로컬 전용 데모다.
 
-const supabaseClient = window.supabase.createClient(INTERVIEW_SUPABASE_URL, INTERVIEW_SUPABASE_ANON_KEY);
+// 면접질문 데이터는 메인 사이트와 다른 Supabase 프로젝트에 있어 별도 클라이언트를 쓴다.
+// (로그인/검색용 supabaseClient는 topbar.js가 선언)
+const interviewSupabaseClient = window.supabase.createClient(INTERVIEW_SUPABASE_URL, INTERVIEW_SUPABASE_ANON_KEY);
 
 const BOOKMARK_KEY = "iq_bookmarks_v1";
 const NOTE_KEY = "iq_notes_v1";
@@ -42,7 +44,7 @@ function getJob(jobId) {
 async function fetchQuestionsForCategory(category) {
   if (questionCache.has(category)) return questionCache.get(category);
 
-  const { data, error } = await supabaseClient
+  const { data, error } = await interviewSupabaseClient
     .from("interview_questions")
     .select("id, question_type, question_text, answer_tip")
     .eq("category_children", category);
@@ -53,7 +55,7 @@ async function fetchQuestionsForCategory(category) {
   if (data && data.length) {
     result = { questions: mapRows(data), isFallback: false };
   } else {
-    const fallback = await supabaseClient
+    const fallback = await interviewSupabaseClient
       .from("interview_questions")
       .select("id, question_type, question_text, answer_tip")
       .eq("category_children", "공통");
@@ -103,7 +105,8 @@ function formatDday(dueTime) {
   return `D-${diffDays}`;
 }
 
-function renderJobCard(job) {
+// topbar.js의 공용 renderJobCard(공고 리스트 카드)와 이름이 겹치지 않도록 구분해서 명명.
+function renderJobContextCard(job) {
   const card = document.getElementById("job-card");
   card.innerHTML = `
     <span class="iq-job-logo" aria-hidden="true">${job.logo}</span>
@@ -313,7 +316,7 @@ noteInput.addEventListener("input", () => {
 async function render() {
   const job = getJob(state.jobId);
   jobSelect.value = job.id;
-  renderJobCard(job);
+  renderJobContextCard(job);
   categoryLabel.textContent = job.categoryChildren[0];
   tabButtons.forEach((b, i) => {
     const isActive = i === 0;
