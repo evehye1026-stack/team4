@@ -18,7 +18,7 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+  font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
 }
 
 .skip-link {
@@ -38,43 +38,12 @@ html, body {
 }
 
 .mono-label {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: "Space Grotesk", sans-serif;
   font-size: 12px;
   letter-spacing: .08em;
   text-transform: uppercase;
   font-weight: 600;
 }
-
-/* ===== 네비 ===== */
-.iq-nav {
-  border-bottom: 1px solid var(--line);
-  background: var(--bg);
-}
-.iq-nav-inner {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 18px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.iq-logo {
-  font-family: "Space Grotesk", sans-serif;
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: -.01em;
-  color: var(--ink);
-  text-decoration: none;
-}
-.iq-back {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color .15s, color .15s;
-}
-.iq-back:hover { color: var(--accent); border-color: var(--accent); }
 
 /* ===== 본문 레이아웃 ===== */
 .iq-main {
@@ -91,7 +60,7 @@ html, body {
   margin-bottom: 14px;
 }
 .iq-select {
-  font-family: "Inter", sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-size: 14px;
   font-weight: 600;
   color: var(--ink);
@@ -127,7 +96,7 @@ html, body {
 }
 .iq-job-dday {
   margin-left: auto;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: "Space Grotesk", sans-serif;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: .04em;
@@ -183,7 +152,7 @@ html, body {
   appearance: none;
   border: none;
   background: none;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: "Space Grotesk", sans-serif;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: .06em;
@@ -367,7 +336,7 @@ html, body {
 .iq-note-scope { text-transform: none; letter-spacing: normal; font-weight: 400; }
 .iq-note {
   width: 100%;
-  font-family: "Inter", sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-size: 14px;
   border: 1px solid var(--line);
   border-radius: 10px;

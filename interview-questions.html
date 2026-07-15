@@ -6,18 +6,89 @@
 <title>예상 면접질문 · SHIPYARD Careers</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="interview-questions.css">
 </head>
 <body>
 <a class="skip-link" href="#main">본문 바로가기</a>
 
-<header class="iq-nav">
-  <div class="iq-nav-inner">
-    <a class="iq-logo" href="index.html">SHIPYARD</a>
-    <a class="iq-back" href="index.html">← 채용 대시보드</a>
+<!-- 상단바 + 공지 배너 + GNB: 스크롤해도 항상 화면 위에 고정 (모든 페이지 공용 — topbar.js) -->
+<div class="site-header">
+  <header class="topbar">
+    <a href="index.html" style="text-decoration:none; color:inherit; display:flex; align-items:center;">
+      <h1>SHIPYARD</h1>
+      <span class="badge">개발 직군 전용</span>
+    </a>
+    <div class="topbar-right">
+      <div class="topbar-auth" id="topbar-auth-guest">
+        <button class="pill" id="topbar-login-btn">로그인</button>
+        <button class="pill active" id="topbar-signup-btn">회원가입</button>
+      </div>
+      <div class="topbar-auth" id="topbar-auth-user" style="display:none;">
+        <span class="topbar-account-email" id="topbar-account-email"></span>
+        <button class="pill" id="topbar-logout-btn">로그아웃</button>
+      </div>
+      <button class="global-search-btn" id="global-search-btn" aria-label="검색 열기" aria-expanded="false" aria-controls="search-drawer">🔍</button>
+    </div>
+  </header>
+
+  <!-- 공지 배너 -->
+  <div class="announce-banner" id="announce-banner">
+    <span>🚀 SHIPYARD FFWD · 신입/경력 개발자 상시모집</span>
+    <button class="announce-close" id="announce-close" aria-label="배너 닫기">✕</button>
   </div>
-</header>
+
+  <!-- GNB (최상단 내비게이션) -->
+  <nav class="gnb">
+    <a class="gnb-btn" href="index.html">채용</a>
+    <a class="gnb-btn" href="index.html#resume">이력서</a>
+    <span class="gnb-btn active" aria-current="page">예상면접</span>
+  </nav>
+</div>
+
+<!-- 전역 검색 드로어 (화면 오른쪽에서 슬라이드 인) -->
+<div class="search-drawer-backdrop" id="search-drawer-backdrop"></div>
+<aside class="search-drawer" id="search-drawer" aria-hidden="true">
+  <div class="search-drawer-head">
+    <h3>공고 검색</h3>
+    <button class="search-drawer-close" id="search-drawer-close" aria-label="검색 닫기">✕</button>
+  </div>
+  <input type="text" id="search-input" class="search-input" placeholder="포지션, 회사, 기술스택으로 검색">
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>지역</label>
+      <select id="f-city"></select>
+    </div>
+  </div>
+
+  <div class="list-toolbar">
+    <span class="result-count" id="search-count"></span>
+    <div class="sort-select">
+      <label>정렬</label>
+      <select id="search-sort"></select>
+    </div>
+  </div>
+
+  <div id="search-cards" class="card-grid search-drawer-cards"></div>
+</aside>
+
+<!-- 로그인/회원가입 드로어 (화면 오른쪽에서 슬라이드 인) -->
+<div class="search-drawer-backdrop" id="auth-drawer-backdrop"></div>
+<aside class="search-drawer" id="auth-drawer" aria-hidden="true">
+  <div class="search-drawer-head">
+    <h3>로그인 / 회원가입</h3>
+    <button class="search-drawer-close" id="auth-drawer-close" aria-label="닫기">✕</button>
+  </div>
+  <input type="email" id="auth-email" class="search-input" placeholder="이메일">
+  <input type="password" id="auth-password" class="search-input" placeholder="비밀번호 (6자 이상)">
+  <div class="auth-actions">
+    <button class="pill active" id="auth-login-btn">로그인</button>
+    <button class="pill" id="auth-signup-btn">회원가입</button>
+  </div>
+  <p class="auth-message" id="auth-message"></p>
+</aside>
 
 <main id="main" class="iq-main">
 
@@ -87,6 +158,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="data.js"></script>
+<script src="topbar.js"></script>
 <script src="interview-questions-data.js"></script>
 <script src="interview-questions.js"></script>
 </body>
