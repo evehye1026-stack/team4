@@ -124,6 +124,7 @@ html, body {
   line-height: 1.6;
   white-space: nowrap;
 }
+.iq-sub-break { display: none; }
 
 /* ===== 폴백 배너 ===== */
 .iq-fallback-banner {
@@ -195,8 +196,8 @@ html, body {
   background: var(--ink);
   color: #fff;
   font-weight: 700;
-  font-size: 14px;
-  padding: 10px 18px;
+  font-size: 12px;
+  padding: 7px 14px;
   border-radius: 999px;
   cursor: pointer;
   transition: background .15s, transform .15s;
@@ -397,4 +398,6 @@ html, body {
   .iq-item-toggle { gap: 10px; }
   .iq-item-type { width: 40px; font-size: 10px; }
   .iq-practice-panel { padding: 20px 18px 22px; }
+  .iq-sub { white-space: normal; }
+  .iq-sub-break { display: block; }
 }
