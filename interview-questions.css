@@ -172,7 +172,22 @@ html, body {
   gap: 16px;
 }
 .iq-toolbar-right .mono-label { color: #7b8098; font-weight: 600; }
-.iq-bookmark-count { color: var(--signal) !important; }
+
+.iq-bookmark-count {
+  appearance: none;
+  border: 1px solid transparent;
+  background: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: var(--signal) !important;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.iq-bookmark-count:hover { background: rgba(77, 227, 208, .12); }
+.iq-bookmark-count[aria-pressed="true"] {
+  background: rgba(77, 227, 208, .16);
+  border-color: var(--signal);
+}
 
 .iq-cta {
   appearance: none;

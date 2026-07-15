@@ -142,10 +142,11 @@ function renderJobCard(job) {
     </div>
     <div class="job-card-overlay">
       <div class="overlay-detail"><span class="label">고용형태</span><span class="value">${employmentTypeLabel(job.employmentType)}</span></div>
+      <div class="overlay-detail"><span class="label">경력조건</span><span class="value">${job.careerLevel}</span></div>
       <div class="overlay-detail"><span class="label">마감일</span><span class="value">${formatDueDate(job)}</span></div>
       <div class="overlay-detail"><span class="label">근무지역</span><span class="value">${job.city} ${job.district}</span></div>
       <div class="overlay-detail"><span class="label">직무 태그</span><span class="value">${job.categoryChildren.join(", ")}</span></div>
-      <a class="overlay-interview-link" href="interview-questions.html?jobId=${job.id}" target="_blank" rel="noopener">예상 면접질문 보기 →</a>
+      <a class="overlay-interview-link" href="interview-questions.html?jobId=${job.id}" target="_blank" rel="noopener">상세보기 →</a>
     </div>
   `;
   div.querySelector(".overlay-interview-link").addEventListener("click", (e) => e.stopPropagation());
@@ -171,13 +172,15 @@ function fillSelect(id, options, valueKey, labelKey) {
 }
 
 // ===== 전역 검색 드로어 내부: 필터링된 공고 목록 =====
-let searchState = { keyword: "", city: "전체", sort: "latest" };
+let searchState = { keyword: "", city: "전체", sort: "latest", career: "전체" };
 
 function renderSearchTab() {
   fillSelect("f-city", CITY_OPTIONS);
+  fillSelect("search-career", CAREER_LEVEL_OPTIONS);
   fillSelect("search-sort", SORT_OPTIONS, "value", "label");
 
   document.getElementById("f-city").value = searchState.city;
+  document.getElementById("search-career").value = searchState.career;
   document.getElementById("search-sort").value = searchState.sort;
 
   document.getElementById("search-input").oninput = (e) => {
@@ -185,6 +188,7 @@ function renderSearchTab() {
     applySearchFilter();
   };
   document.getElementById("f-city").onchange = (e) => { searchState.city = e.target.value; applySearchFilter(); };
+  document.getElementById("search-career").onchange = (e) => { searchState.career = e.target.value; applySearchFilter(); };
   document.getElementById("search-sort").onchange = (e) => { searchState.sort = e.target.value; applySearchFilter(); };
 
   applySearchFilter();
@@ -199,6 +203,7 @@ function applySearchFilter() {
     }
     return true;
   });
+  list = filterByCareer(list, searchState.career);
   list = sortJobs(list, searchState.sort);
 
   document.getElementById("search-count").innerHTML = `조건에 맞는 공고 <b>${list.length}건</b>`;
@@ -230,6 +235,7 @@ function mapSupabaseRow(row) {
     fullLocation: row.full_location || "",
     subcategory: mapToSubcategoryGroup(row.category_children && row.category_children[0]),
     categoryChildren: row.category_children || [],
+    careerLevel: parseCareerLevel(row.name),
     employmentType: row.employment_type,
     dueTime: row.due_time,
     rewardTotal: row.reward_total,

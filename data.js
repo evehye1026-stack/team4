@@ -49,6 +49,23 @@ const SORT_OPTIONS = [
   { value: "deadline", label: "마감임박순" },
 ];
 
+// 원티드 실제 API는 공고별 경력 조건을 구조화된 필드로 제공하지 않는다(신입/학력/급여처럼 공고명 텍스트에만 간혹 등장).
+// 그래서 공고명에 "신입"/"N년 이상"/"경력무관" 같은 표현이 있는지 best-effort로 추출하고, 명시되지 않은 공고는 "경력무관"으로 취급한다.
+const CAREER_LEVEL_OPTIONS = ["전체", "신입", "경력", "경력무관"];
+
+function parseCareerLevel(name) {
+  if (!name) return "경력무관";
+  if (/경력\s*무관|무관/.test(name)) return "경력무관";
+  if (/신입/.test(name)) return "신입";
+  if (/\d+\s*년\s*(차\s*)?(이상|↑|~|이내)?|경력\s*\d+\s*년/.test(name)) return "경력";
+  return "경력무관";
+}
+
+function filterByCareer(list, career) {
+  if (!career || career === "전체") return list;
+  return list.filter(job => job.careerLevel === career);
+}
+
 // 원티드 원본 직무 태그(39종)를 직무별 개발 공고 섹션에서 보기 좋도록 20종 내외로 묶는다.
 const SUBCATEGORY_GROUPS = [
   { name: "백엔드", match: /서버 개발자|자바 개발자|Node\.js 개발자|PHP 개발자|\.NET 개발자|소프트웨어 엔지니어/i },

@@ -407,6 +407,12 @@ html, body {
   margin-bottom: 16px;
 }
 
+.list-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .sort-select {
   display: flex;
   align-items: center;
@@ -414,7 +420,7 @@ html, body {
 }
 
 .sort-select label {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: .06em;
@@ -423,6 +429,7 @@ html, body {
 }
 
 .sort-select select {
+  font-family: var(--font-body);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 7px 10px;
@@ -588,6 +595,40 @@ html, body {
 .job-section-row .job-card {
   flex: none;
   width: 270px;
+}
+
+.job-section-more {
+  appearance: none;
+  flex: none;
+  width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink-sub);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+}
+
+.job-section-more:hover,
+.job-section-more:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-tint);
+}
+
+.job-section-more-arrow {
+  font-size: 20px;
+  line-height: 1;
 }
 
 /* 카드 그리드 */

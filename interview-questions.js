@@ -16,6 +16,7 @@ const state = {
   notes: loadObject(NOTE_KEY),
   currentSet: null, // { category, questions, isFallback } — 현재 선택된 공고에 대해 로드된 질문 세트
   loading: false,
+  showBookmarkedOnly: false,
   practice: { active: false, deck: [], index: 0, revealed: false },
 };
 
@@ -140,8 +141,14 @@ const fallbackBanner = document.getElementById("fallback-banner");
 const categoryLabel = document.getElementById("iq-category-label");
 const practiceStartBtn = document.getElementById("practice-start-btn");
 
+bookmarkCountEl.addEventListener("click", () => {
+  state.showBookmarkedOnly = !state.showBookmarkedOnly;
+  renderList();
+});
+
 function renderList() {
   bookmarkCountEl.textContent = `스크랩 ${state.bookmarks.size}`;
+  bookmarkCountEl.setAttribute("aria-pressed", String(state.showBookmarkedOnly));
 
   if (state.loading) {
     countEl.textContent = "";
@@ -156,15 +163,18 @@ function renderList() {
   const { questions, isFallback } = state.currentSet;
   fallbackBanner.hidden = !isFallback;
 
-  const filtered = state.activeType === "전체"
+  let filtered = state.activeType === "전체"
     ? questions
     : questions.filter((q) => q.type === state.activeType);
+  if (state.showBookmarkedOnly) filtered = filtered.filter((q) => state.bookmarks.has(q.id));
 
   countEl.textContent = `${filtered.length}개 질문`;
 
   listEl.innerHTML = "";
   if (!filtered.length) {
-    listEl.innerHTML = `<li class="iq-empty">이 유형에 해당하는 질문이 아직 없어요.</li>`;
+    listEl.innerHTML = state.showBookmarkedOnly
+      ? `<li class="iq-empty">아직 스크랩한 질문이 없어요. 질문 옆 ☆를 눌러 스크랩해보세요.</li>`
+      : `<li class="iq-empty">이 유형에 해당하는 질문이 아직 없어요.</li>`;
     return;
   }
 
@@ -324,6 +334,7 @@ async function render() {
     b.setAttribute("aria-selected", String(isActive));
   });
   state.activeType = "전체";
+  state.showBookmarkedOnly = false;
 
   state.loading = true;
   state.currentSet = null;
